@@ -4,7 +4,7 @@ type Study={ratio:number;color:string};
 export interface ArtDirection {
  color:string; seconds:number; motion:string; texture:string;
  layout?:'folio'|'panorama'|'pair'|'sequence'; energy?:Energy;
- studies?:Study[]; cadence?:number; longform?:boolean; edition?:number; paperTone?:string;
+ studies?:Study[]; cadence?:number; longform?:boolean; edition?:number; paperTone?:string; previewPath?:string;
 }
 const palette={glow:'#cb9b61',hush:'#8ca490',echo:'#71879c',pulse:'#a75a67'};
 export function suggestTitle(diary:string,room:RoomId){

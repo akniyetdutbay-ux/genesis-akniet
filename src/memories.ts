@@ -1,7 +1,7 @@
 import { readCloud } from './cloud';
 import { useEffect, useState } from 'react';
 import { type Room, type RoomId } from './data';
-export interface Memory {track?:import("./MusicSearch").Track;cloud?:boolean;id:string;kind?:'demo'|'test'|'personal';date:string;title:string;diary:string;room:RoomId;slot:number;photos:Blob[];musicUrl:string;audio?:Blob;visual:import('./artDirection').ArtDirection;createdAt:string}
+export interface Memory {media?:{pictures:string[];audio?:string;audioUrl?:string;expires?:number};track?:import("./MusicSearch").Track;cloud?:boolean;id:string;kind?:'demo'|'test'|'personal';date:string;title:string;diary:string;room:RoomId;slot:number;photos:Blob[];musicUrl:string;audio?:Blob;visual:import('./artDirection').ArtDirection;createdAt:string}
 export { interpret } from './artDirection';
 function database():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const request=indexedDB.open('museum-of-days',2);request.onupgradeneeded=()=>{for(const store of ['memories','meta'])if(!request.result.objectStoreNames.contains(store))request.result.createObjectStore(store,{keyPath:'id'})};request.onsuccess=()=>{request.result.onversionchange=()=>request.result.close();resolve(request.result)};request.onerror=()=>reject(request.error);request.onblocked=()=>reject(new Error('Close other museum tabs and try again.'))})}
 function complete(tx:IDBTransaction,db:IDBDatabase):Promise<void>{return new Promise((resolve,reject)=>{tx.oncomplete=()=>{db.close();resolve()};tx.onabort=()=>{db.close();reject(tx.error??new Error('Local storage transaction failed.'))}})}
