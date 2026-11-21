@@ -8,10 +8,9 @@ const assert=require('node:assert/strict');
   const p=await browser.newPage({viewport:{width:1440,height:900},reducedMotion:'reduce'});
   const errors=[];p.on('pageerror',e=>errors.push(e.message));
   await p.goto((process.env.BASE_URL||'http://127.0.0.1:4337')+'/#hall');
-  await p.getByRole('button',{name:'The collection',exact:true}).click();
   await p.getByLabel('Email',{exact:true}).fill(process.env.QA_EMAIL);await p.getByLabel('Password',{exact:true}).fill(process.env.QA_PASSWORD);
-  await p.getByRole('button',{name:'Sign in with email'}).click();
-  await p.getByText('Private cloud collection',{exact:true}).waitFor();
+  await p.getByRole('button',{name:'Continue with Email'}).click();
+  await p.getByRole('button',{name:'Enter the museum',exact:true}).click();
   await p.locator('[data-place=hall][data-ready=true]').waitFor();
   await p.mouse.click(190,440);await p.locator('[data-place=glow]').waitFor();await p.waitForTimeout(400);
   await p.mouse.click(340,440);await p.getByLabel('Your diary').fill('A quiet walk beside the river.');
@@ -25,7 +24,7 @@ const assert=require('node:assert/strict');
   const committed=p.waitForResponse(r=>r.url().includes('/rpc/store_day')&&r.request().method()==='POST');
   await p.getByRole('button',{name:'Save memory',exact:true}).click();assert((await committed).ok());
   await p.getByRole('heading',{name:title,exact:true}).waitFor();
-  async function play(){await p.getByRole('button',{name:'Open living memory'}).click();const viewer=p.getByRole('dialog',{name:'Living memory'});await viewer.waitFor();assert.match(await viewer.getAttribute('class'),/layout-sequence/);await viewer.locator('.memory-image img').evaluate(i=>i.decode());await viewer.getByRole('button',{name:'Play',exact:true}).click();await viewer.getByRole('button',{name:'Pause',exact:true}).click();await viewer.getByRole('button',{name:'Next photograph'}).click();await viewer.getByRole('button',{name:'Previous photograph'}).click();await viewer.getByRole('button',{name:'Replay'}).click();await viewer.getByRole('button',{name:/Return to gallery/}).click();}
+  async function play(){await p.getByRole('button',{name:'Open living memory'}).click();const viewer=p.getByRole('dialog',{name:'Living memory'});await viewer.waitFor();assert.match(await viewer.getAttribute('class'),/layout-sequence/);await viewer.locator('.memory-image img').evaluate(i=>i.decode());await viewer.getByRole('button',{name:'Pause',exact:true}).click();await viewer.getByRole('button',{name:'Play',exact:true}).click();await viewer.getByRole('button',{name:'Next photograph'}).click();await viewer.getByRole('button',{name:'Previous photograph'}).click();await viewer.getByRole('button',{name:'Replay'}).click();await viewer.getByRole('button',{name:/Return to gallery/}).click();}
   await play();await p.reload();await p.getByRole('button',{name:'The collection',exact:true}).click();await p.getByRole('button',{name:new RegExp(title)}).click();await play();
   await p.getByRole('button',{name:'The collection',exact:true}).click();
   p.once('dialog',d=>d.accept());await p.locator('.collection-list > div').filter({hasText:title}).getByRole('button',{name:'Delete',exact:true}).click();
