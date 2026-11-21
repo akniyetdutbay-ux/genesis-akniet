@@ -83,3 +83,26 @@
 @media(min-width:701px){.living-memory.layout-pair .companion-print{width:19vw;left:34vw;bottom:16%;transform:rotate(3deg)}.living-memory.layout-folio .memory-story{border-left:1px solid var(--memory-color);border-top:0;padding-left:2rem}}
 .photo-previews figcaption{font:500 12px 'DM Sans',sans-serif;margin-top:4px}.photo-previews figure button{display:block;padding:5px 0;text-decoration:underline;text-underline-offset:3px}
 .auth-welcome{position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:1000;background:#eee7d6;color:#302e26;padding:.65rem 1rem;box-shadow:0 3px 16px #0002}.auth-welcome button{margin-left:.5rem}.account-card form [role=status]:empty{display:none}.account-card form [role=status]{margin:.65rem 0;line-height:1.45}
+
+
+/* Account verification: a single accessible OTP input supports mobile autofill and paste. */
+.password-entry{position:relative;display:block}
+.account-card .password-entry input{width:100%;padding-right:48px}
+.account-card .password-entry .password-reveal{position:absolute;inset:0 0 0 auto;width:44px;display:flex;align-items:center;justify-content:center;color:#575b4b;background:transparent;border:0;opacity:1}
+.account-card .password-reveal:hover{background:#ede4d3}
+.account-card .password-reveal:focus-visible{outline:2px solid #a18043;outline-offset:2px}
+.verification-card{padding:12px 0}
+.verification-icon{display:flex;align-items:center;justify-content:center;width:48px;height:48px;color:#78643c;border:1px solid #a99b7d;border-radius:50%;margin-bottom:24px}
+.verification-kicker{font:600 10px/1.4 "DM Sans",sans-serif;letter-spacing:.22em;color:#8a7453;margin:0 0 14px}
+.verification-card h2{font-size:clamp(34px,4vw,46px);margin:0 0 16px}
+.verification-description{font:15px/1.7 "DM Sans",sans-serif;color:#535347;margin-bottom:24px}
+.verification-description strong{font-weight:600;overflow-wrap:anywhere;color:#33362f}
+.verification-card form{gap:12px}
+.account-card input.verification-code{display:block;width:100%;min-height:68px;padding:12px 4px;border:1px solid #a99b7d;border-radius:3px;background:#fffaf0;text-align:center;font:500 clamp(26px,6vw,38px)/1.2 "DM Sans",sans-serif;letter-spacing:.34em;font-variant-numeric:tabular-nums;caret-color:#987d4c}
+.account-card input.verification-code::placeholder{color:#c8bcaa}
+.account-card input.verification-code:focus-visible{outline:2px solid #9b8151;outline-offset:3px}
+.verification-help{font:12px/1.5 "DM Sans",sans-serif;color:#6b685c;margin:0 0 4px}
+.verification-actions{display:flex;flex-wrap:wrap;gap:12px 20px;margin:20px 0 4px}
+.verification-actions button{font:13px/1.4 "DM Sans",sans-serif;color:#6d5b3d;text-decoration:underline;text-underline-offset:4px;padding:4px 0}
+.verification-actions button:hover:not(:disabled){color:#302c24}
+@media(max-width:700px){.verification-card{padding:6px 0}.account-card input.verification-code{min-height:64px;letter-spacing:.25em}.verification-actions{gap:10px 16px}}
