@@ -1,5 +1,5 @@
 import {Account} from './Account';
-import {client,hydrate,removeCloud,saveCloud} from './cloud';
+import {client,hydrate,prepareOpening,removeCloud,saveCloud} from './cloud';
 import { VisitorGuide } from './VisitorGuide';
 import { readMemories } from './memories';
 import { MemoryEditor, MemoryViewer } from './MemoryUI';
@@ -171,7 +171,7 @@ export default function App({owner}:{owner:string|null}) {
       void setAmbience(false);setSound(false);setNotice('Opening memory…');
       const audio=memory.audio?URL.createObjectURL(memory.audio):memory.media?.expires&&memory.media.expires>Date.now()?memory.media.audioUrl:undefined;
       if(audio){if(memory.audio)soundBlob.current=audio;const a=new Audio(audio);soundtrack.current=a;void a.play().catch(()=>{});}
-      Promise.all([hydrate(memory),new Promise(resolve=>setTimeout(resolve,reduced?0:1100))]).then(([full])=>{
+      Promise.all([prepareOpening(memory),new Promise(resolve=>setTimeout(resolve,reduced?0:1100))]).then(([full])=>{
         if(ticket.current!==request)return;
         if(!soundtrack.current&&full.audio){soundBlob.current=URL.createObjectURL(full.audio);soundtrack.current=new Audio(soundBlob.current);void soundtrack.current.play().catch(()=>{});}
         setNotice('');setViewer(full);

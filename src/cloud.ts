@@ -65,7 +65,12 @@ export async function saveCloud(memory:Memory, owner:string, replacing=false, ph
     phase?.('Saving your memory...');
     submitted=true;
     const {error}=await client!.rpc('store_day',{day:{id,date,title,diary,room,slot,visual:{...visual,previewPath},visibility:'private'},pictures,music:{url:memory.musicUrl,path,title:memory.track?.title,artist:memory.track?.artist,track_id:memory.track?.id}});
-    if(error){if(error.code && /^([0-9A-Z]{5}|PGRST\d+)$/.test(error.code)) submitted=false; throw error;}
+    if(error){
+      if(error.code && /^([0-9A-Z]{5}|PGRST\d+)$/.test(error.code)){submitted=false;throw error}
+      // A lost HTTP response can follow a committed transaction. Its unique cover identifies this write.
+      const receipt=await client!.from('memories').select('visual_settings').eq('id',id).maybeSingle();
+      if(receipt.error||receipt.data?.visual_settings?.previewPath!==previewPath)throw error;
+    }
     memory.visual={...visual,previewPath};memory.media={pictures:pictures.map(p=>p.path),audio:path??undefined};
     if(previous.length)await cleanFiles(owner,previous).catch(()=>{});
   } catch(error) {
@@ -91,6 +96,17 @@ export async function readCloud(owner:string):Promise<Memory[]> {
   });
 }
 
+export async function prepareOpening(memory:Memory):Promise<Memory>{
+  if(!memory.media||memory.photos.length)return memory;
+  const keys=memory.media.pictures;
+  const {data,error}=await media().createSignedUrls(keys,3600);
+  if(error)throw error;
+  const urls=new Map(data.map(entry=>[entry.path,entry.signedUrl]));
+  const sources=keys.map(path=>{const url=urls.get(path);if(!url)throw Error('A photograph is unavailable.');return url});
+  // Only the displayed photographs are requested by the viewer. Editing still hydrates originals.
+  const needsAudio=memory.media.audio&&(!memory.media.audioUrl||!memory.media.expires||memory.media.expires<=Date.now());
+  return {...memory,sources,audio:needsAudio?await download(memory.media.audio!):undefined};
+}
 export async function hydrate(memory:Memory):Promise<Memory>{
   if(!memory.media || memory.photos.length)return memory;
   const [photos,audio]=await Promise.all([Promise.all(memory.media.pictures.map(download)),memory.media.audio?download(memory.media.audio):undefined]);
