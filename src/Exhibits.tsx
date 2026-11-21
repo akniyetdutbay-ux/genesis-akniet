@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import gsap from 'gsap';
+import { AtelierModel } from './AtelierModel';
 import { Box } from './Architecture';
 import { rooms, type RoomId } from './data';
 import { useBlobUrl, type Memory } from './memories';
@@ -23,7 +24,7 @@ function DoorPanel({id,hover,reduced}:{id:RoomId;hover:boolean;reduced:boolean})
  return <mesh position={[1.8,2.9,0]} castShadow receiveShadow><boxGeometry args={[3.6,5.8,.16]}/><meshStandardMaterial ref={material} color={lacquer[id][0]} roughness={.52}/></mesh>;
 }
 function PhysicalDoor({id,color,open,onDoor,reduced}:{id:RoomId;color:string;open:boolean;onDoor:(id:RoomId)=>void;reduced:boolean}){const leaf=useRef<THREE.Group>(null);const [hover,setHover]=useState(false);const {invalidate}=useThree();useEffect(()=>{const tween=gsap.to(leaf.current!.rotation,{y:open?-1.45:0,duration:reduced?0:1.2,onUpdate:invalidate});return()=>{tween.kill()}},[open,reduced,invalidate]);return <group position={[doorX[id],0,-12]} onPointerOver={()=>{setHover(true);document.body.style.cursor='pointer'}} onPointerOut={()=>{setHover(false);document.body.style.cursor=''}} onClick={e=>{e.stopPropagation();onDoor(id)}}>
- <Box p={[0,3,-7]} s={[3.8,6,.15]} c={color}/><Box p={[0,.035,-3.3]} s={[3.8,.07,7]} c="#968675"/><Box p={[-2,3,-3]} s={[.3,6,7]} c="#c7bca5"/><Box p={[2,3,-3]} s={[.3,6,7]} c="#c7bca5"/><Box p={[0,6,-3]} s={[4.3,.4,7]} c="#c7bca5"/>
+ <AtelierModel name="threshold-surround"/><Box p={[0,3,-7]} s={[3.8,6,.15]} c={color}/><Box p={[0,.035,-3.3]} s={[3.8,.07,7]} c="#968675"/><Box p={[-2,3,-3]} s={[.3,6,7]} c="#c7bca5"/><Box p={[2,3,-3]} s={[.3,6,7]} c="#c7bca5"/><Box p={[0,6,-3]} s={[4.3,.4,7]} c="#c7bca5"/>
  <group ref={leaf} position={[-1.8,0,.1]}><DoorPanel id={id} hover={hover} reduced={reduced}/>{[.35,2.9,5.45].map(y=><Box key={y} p={[1.8,y,.12]} s={[3.3,.06,.08]} c="#bca470" metal={.65}/>)}{[.3,3.3].map(x=><Box key={x} p={[x,2.9,.12]} s={[.06,5.2,.08]} c="#bca470" metal={.65}/>)}{id==='glow'&&[-1,0,1].map(n=><Box key={n} p={[1.8+n*.6,4.1,.13]} s={[.045,1.8,.08]} c="#cbb273" metal={.7}/>)}{id==='hush'&&<mesh position={[1.8,4.3,.16]}><torusGeometry args={[1,.045,8,40,Math.PI]}/><meshStandardMaterial color="#d6dcc7"/></mesh>}{id==='echo'&&[1.5,4.2].map(y=><mesh key={y} position={[1.8,y,.17]}><torusGeometry args={[.65,.045,8,32]}/><meshStandardMaterial color="#9a9b91" metalness={.6}/></mesh>)}{id==='pulse'&&[-1,0,1].map(n=><group key={n} position={[1.8,3.5+n*.65,.16]} rotation-z={-.35}><Box p={[0,0,0]} s={[2.5,.08,.08]} c="#c4a08a" metal={.6}/></group>)}<Box p={[3.12,2.7,.22]} s={[.06,.55,.1]} c="#d4b778" metal={.8}/></group>
  <mesh position={[0,6.65,.2]}><planeGeometry args={[3.5,.5]}/><meshBasicMaterial map={inscriptionTexture(id.toUpperCase())} transparent/></mesh>{hover&&<mesh position={[0,1,.25]}><planeGeometry args={[2.8,.4]}/><meshBasicMaterial transparent map={inscriptionTexture('Step inside')}/></mesh>}
  </group>}

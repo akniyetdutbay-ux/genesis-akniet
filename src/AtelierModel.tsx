@@ -5,7 +5,7 @@ import { Mesh, MeshStandardMaterial } from 'three';
 import type { RoomId } from './data';
 
 type Triple = [number,number,number];
-export function AtelierModel({name,position,scale,finish}:{name:'limestone-portal'|'gallery-molding'|'alabaster-lantern';position?:Triple;scale?:Triple;finish?:RoomId}) {
+export function AtelierModel({name,position,scale,finish}:{name:'threshold-surround'|'golden-loggia'|'sunlit-rebate'|'limestone-portal'|'gallery-molding'|'alabaster-lantern';position?:Triple;scale?:Triple;finish?:RoomId}) {
   const gltf = useLoader(GLTFLoader, '/models/'+name+'.glb');
   const object = useMemo(()=>{
     const root=gltf.scene.clone(true);
