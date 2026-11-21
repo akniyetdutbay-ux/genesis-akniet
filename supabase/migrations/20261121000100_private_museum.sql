@@ -1,0 +1,28 @@
+create table public.profiles(user_id uuid primary key references auth.users on delete cascade, display_name text, avatar_url text, created_at timestamptz default now(), updated_at timestamptz default now());
+create table public.memories(id uuid primary key, user_id uuid not null default auth.uid() references auth.users on delete cascade, memory_date date not null,title text not null, diary_text text not null, emotional_room text not null check(emotional_room in ('glow','hush','echo','pulse')), slot integer not null check(slot between 0 and 10000), visibility text not null default 'private' check(visibility in ('private','unlisted','public')), mood_metadata jsonb not null default '{}', visual_settings jsonb not null, created_at timestamptz default now(), updated_at timestamptz default now(), unique(user_id,emotional_room,slot));
+create table public.memory_photos(id uuid primary key default gen_random_uuid(), memory_id uuid not null references public.memories on delete cascade, storage_path text not null, display_order integer not null, width integer,height integer,content_type text not null,file_size bigint not null,created_at timestamptz default now(),unique(memory_id,display_order));
+create table public.memory_music(memory_id uuid primary key references public.memories on delete cascade, track_title text, artist text, provider text,provider_track_id text, external_url text check(external_url ~* '^https?://'), artwork_url text,music_mood text,music_energy numeric,available_metadata jsonb default '{}',storage_path text,created_at timestamptz default now());
+create table public.share_links(id uuid primary key default gen_random_uuid(),memory_id uuid not null references public.memories on delete cascade,created_by uuid not null references auth.users on delete cascade,token_hash bytea unique not null,created_at timestamptz default now(),expires_at timestamptz,revoked_at timestamptz);
+alter table public.profiles enable row level security;
+revoke all on public.profiles from public,anon,authenticated;
+grant select,insert,update,delete on public.profiles to authenticated;
+create policy owner_access on public.profiles for all to authenticated using (user_id=(select auth.uid())) with check (user_id=(select auth.uid()));
+alter table public.memories enable row level security;
+revoke all on public.memories from public,anon,authenticated;
+grant select,insert,update,delete on public.memories to authenticated;
+create policy owner_access on public.memories for all to authenticated using (user_id=(select auth.uid())) with check (user_id=(select auth.uid()));
+alter table public.memory_photos enable row level security;
+revoke all on public.memory_photos from public,anon,authenticated;
+grant select,insert,update,delete on public.memory_photos to authenticated;
+create policy owner_access on public.memory_photos for all to authenticated using (exists(select 1 from public.memories m where m.id=memory_photos.memory_id and m.user_id=(select auth.uid()))) with check (exists(select 1 from public.memories m where m.id=memory_photos.memory_id and m.user_id=(select auth.uid())));
+alter table public.memory_music enable row level security;
+revoke all on public.memory_music from public,anon,authenticated;
+grant select,insert,update,delete on public.memory_music to authenticated;
+create policy owner_access on public.memory_music for all to authenticated using (exists(select 1 from public.memories m where m.id=memory_music.memory_id and m.user_id=(select auth.uid()))) with check (exists(select 1 from public.memories m where m.id=memory_music.memory_id and m.user_id=(select auth.uid())));
+alter table public.share_links enable row level security;
+revoke all on public.share_links from public,anon,authenticated;
+grant select,insert,update,delete on public.share_links to authenticated;
+create policy owner_access on public.share_links for all to authenticated using (exists(select 1 from public.memories m where m.id=share_links.memory_id and m.user_id=(select auth.uid())) and created_by=(select auth.uid())) with check (exists(select 1 from public.memories m where m.id=share_links.memory_id and m.user_id=(select auth.uid())) and created_by=(select auth.uid()));
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values ('memory-media','memory-media',false,26214400,array['image/jpeg','image/png','image/webp','audio/mpeg','audio/mp4','audio/ogg','audio/wav','audio/webm']);
+create policy museum_media on storage.objects for all to authenticated using(bucket_id='memory-media' and (storage.foldername(name))[1]=(select auth.uid())::text) with check(bucket_id='memory-media' and (storage.foldername(name))[1]=(select auth.uid())::text and cardinality(storage.foldername(name))=2);
+

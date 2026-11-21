@@ -1,3 +1,5 @@
+import {Account} from './Account';
+import {client,removeCloud,saveCloud} from './cloud';
 import { VisitorGuide } from './VisitorGuide';
 import { readMemories } from './memories';
 import { MemoryEditor, MemoryViewer } from './MemoryUI';
@@ -76,10 +78,26 @@ function Dialog({ title, onClose, children }: {
 
     onClose(); }}><div className="dialog-inner"><button className="icon-button close" aria-label="Close dialog" onClick={onClose}><X size={22}/></button><h2 id="dialog-title">{title}</h2>{children}</div></dialog>; }
 
-export default function App() {
+export default function App({owner}:{owner:string|null}) {
 
-    const {memories,setMemories,error:storageError,loaded}=useMemories();
+    const {memories,setMemories,error:storageError,loaded}=useMemories(owner);
 
+    const [editing,setEditing]=useState<Memory>();
+    const [accountMessage,setAccountMessage]=useState('');
+    const [working,setWorking]=useState(false);
+    async function importLocal(){
+      if(!owner||working)return;
+      setWorking(true);
+      try{
+        const existing=[...memories];let count=0;
+        for(const m of await readMemories()){
+          if(m.kind==='demo'||m.kind==='test'||existing.some(x=>x.id===m.id))continue;
+          const copy={...m,cloud:true};while(existing.some(x=>x.room===copy.room&&x.slot===copy.slot))copy.slot++;
+          await saveCloud(copy,owner);existing.push(copy);setMemories([...existing]);count++;
+        }
+        setAccountMessage('Personal memories imported: '+count+'. Originals are still in this browser.');
+      }catch{setAccountMessage('Import paused. Completed memories are kept. Try again.')}finally{setWorking(false)}
+    }
     const [editor,setEditor]=useState<number|null>(null);
 
     const [viewer,setViewer]=useState<Memory|null>(null);
@@ -140,7 +158,7 @@ export default function App() {
 
     const onSettled = useCallback(() => setBusy(false), []);
 
-    const onSelect = useCallback((i:number)=>{if(!loaded||busy)return;setSelected(i);const memory=memories.find(m=>m.room===place&&m.slot===i);if(memory){if(viewerTimer.current)clearTimeout(viewerTimer.current);viewerTimer.current=setTimeout(()=>{setViewer(memory);void setAmbience(false);setSound(false)},reduced?0:1450)}else setEditor(i)},[loaded,busy,memories,place,reduced]);
+    const onSelect = useCallback((i:number)=>{if(!loaded||busy)return;setSelected(i);const memory=memories.find(m=>m.room===place&&m.slot===i);if(memory){if(viewerTimer.current)clearTimeout(viewerTimer.current);viewerTimer.current=setTimeout(()=>{setViewer(memory);void setAmbience(false);setSound(false)},reduced?0:1450)}else {if(!owner)sessionStorage.setItem("museum-create",JSON.stringify({room:place,slot:i}));setEditor(i)}},[loaded,busy,memories,place,reduced,owner]);
 
     useEffect(()=>()=>{if(viewerTimer.current)clearTimeout(viewerTimer.current)},[]);
 
@@ -208,7 +226,8 @@ export default function App() {
 
     const arrival=useCallback(()=>{if(door)navigate(door)},[door,navigate]);
 
-    function saved(memory:Memory){setMemories(old=>[...old,memory]);setEditor(null);if(place!==memory.room){setPlace(memory.room);history.pushState(null,'','#'+memory.room)}setSelected(memory.slot)}
+    useEffect(()=>{if(!owner||!loaded)return;const pending=sessionStorage.getItem("museum-create");if(!pending)return;sessionStorage.removeItem("museum-create");try{const p=JSON.parse(pending);if(["glow","hush","echo","pulse"].includes(p.room)&&Number.isInteger(p.slot)){setPlace(p.room);history.replaceState(null,"","#"+p.room);setEditor(p.slot)}}catch{}},[owner,loaded]);
+    function saved(memory:Memory){setEditing(undefined);setMemories(old=>[...old.filter(m=>m.id!==memory.id),memory]);setEditor(null);if(place!==memory.room){setPlace(memory.room);history.pushState(null,'','#'+memory.room)}setSelected(memory.slot)}
 
     async function toggleSound() { try {
 
@@ -250,7 +269,7 @@ export default function App() {
 
  <div className="gallery-top"><button className="back-button" disabled={busy} onClick={() => selected !== null ? setSelected(null) : navigate('hall')}><ArrowLeft size={17}/>{selected !== null ? 'Back to the gallery' : 'Main hall'}</button><nav className="room-switch" aria-label="Emotional galleries">{rooms.map(r => <button key={r.id} aria-current={r.id === place ? 'page' : undefined} onClick={() => navigate(r.id)} disabled={busy}>{r.name}</button>)}</nav></div>
 
- {!art ? <section className="gallery-copy reveal"><h1>{room.name}</h1><p className="emotion-name">{room.emotion}</p><p className="gallery-line">{room.line}</p><button className="art-button" disabled={busy||!loaded||!!storageError} onClick={() => onSelect(firstEmpty)}>Create a memory</button>{sampleIndex>=0&&<button className="art-button sample-action" disabled={busy||!loaded} onClick={()=>onSelect(sampleIndex)}>Explore demo memory</button>}</section> : <section className="art-detail"><div className="art-detail-title"><span className="sample-label">{art.memory ? (art.memory.kind==='demo'?'Demo sample':art.memory.kind==='test'?'Test memory · local':'Personal memory · local') : 'A place for your next memory'}</span><h1>{art.title}</h1><p>{art.subtitle}</p><button className="art-button" onClick={()=>onSelect(selected!)}>{art.memory?'Open living memory':'Create a memory'}</button></div><p className="art-note">{art.note}</p><div className="art-pager"><button className="icon-button" aria-label="Previous artwork" onClick={() => setSelected(i => Math.max(0, (i ?? 0) - 1))} disabled={selected === 0}><ChevronLeft size={24}/></button><span>{selected! + 1} / {room.works.length}</span><button className="icon-button" aria-label="Next artwork" onClick={() => setSelected(i => Math.min(room.works.length - 1, (i ?? 0) + 1))} disabled={selected === room.works.length - 1}><ChevronRight size={24}/></button></div></section>}
+ {!art ? <section className="gallery-copy reveal"><h1>{room.name}</h1><p className="emotion-name">{room.emotion}</p><p className="gallery-line">{room.line}</p><button className="art-button" disabled={busy||!loaded||!!storageError} onClick={() => onSelect(firstEmpty)}>Create a memory</button>{sampleIndex>=0&&<button className="art-button sample-action" disabled={busy||!loaded} onClick={()=>onSelect(sampleIndex)}>Explore demo memory</button>}</section> : <section className="art-detail"><div className="art-detail-title"><span className="sample-label">{art.memory ? (art.memory.kind==='demo'?'Demo sample':art.memory.kind==='test'?'Test memory · local':art.memory.cloud?'Private cloud memory':'Personal memory · local') : 'A place for your next memory'}</span><h1>{art.title}</h1><p>{art.subtitle}</p><button className="art-button" onClick={()=>onSelect(selected!)}>{art.memory?'Open living memory':'Create a memory'}</button></div><p className="art-note">{art.note}</p><div className="art-pager"><button className="icon-button" aria-label="Previous artwork" onClick={() => setSelected(i => Math.max(0, (i ?? 0) - 1))} disabled={selected === 0}><ChevronLeft size={24}/></button><span>{selected! + 1} / {room.works.length}</span><button className="icon-button" aria-label="Next artwork" onClick={() => setSelected(i => Math.min(room.works.length - 1, (i ?? 0) + 1))} disabled={selected === room.works.length - 1}><ChevronRight size={24}/></button></div></section>}
 
  </> : null}
 
@@ -264,12 +283,13 @@ export default function App() {
 
  {panel === 'about' && <Dialog title="Not every day is extraordinary. Every day is yours." onClose={closePanel}><p className="dialog-intro">Museum of Days is a place for the things you want to keep: a feeling, a person, the light on an ordinary afternoon.</p><p>Here, your photographs and words become exhibits. Each finds a place in a gallery shaped by how that day felt.</p><div className="about-emotions">{rooms.map(r => <span key={r.id}>{r.name}<small>{r.emotion.replace('The gallery of ', '')}</small></span>)}</div><p>Choose an empty frame to keep a day. Your memories stay in this browser on this device, ready for your next visit.</p><button className="solid-button" onClick={() => navigate('hall')}>Visit the main hall</button></Dialog>}
 
- {panel==='guide'&&<Dialog title="Your first visit." onClose={closePanel}><VisitorGuide onChange={async()=>{if(viewerTimer.current)clearTimeout(viewerTimer.current);setViewer(null);setEditor(null);setSelected(null);setMemories(await readMemories())}}/></Dialog>}
+ {panel==='guide'&&<Dialog title="Your first visit." onClose={closePanel}>{owner?<p>Your collection is saved privately to your account.</p>:<VisitorGuide onChange={async()=>{if(viewerTimer.current)clearTimeout(viewerTimer.current);setViewer(null);setEditor(null);setSelected(null);setMemories(await readMemories())}}/>}</Dialog>}
  {storageError&&<p className="storage-error" role="alert">{storageError}</p>}
 
- {panel==='collection'&&<Dialog title="The days you kept." onClose={closePanel}><p>Saved only in this browser, not shared with other visitors. Keep using this website address and browser to return to your collection.</p>{memories.length===0?<p>No memories yet. Step into a gallery and choose an empty frame.</p>:<div className="collection-list">{memories.map(m=><button key={m.id} onClick={()=>{setPanel(null);setPlace(m.room);history.pushState(null,'','#'+m.room);setSelected(m.slot)}}><strong>{m.title}<small className="memory-kind">{m.kind==='demo'?'Demo sample':m.kind==='test'?'Test memory':'Personal memory'}</small></strong><span>{m.date} · {m.room}</span></button>)}</div>}<button className="solid-button" onClick={()=>navigate('hall')}>Return to the main hall</button></Dialog>}
+ {panel==='collection'&&<Dialog title="The days you kept." onClose={closePanel}><p> {owner?'Your private cloud collection.':'Guest memories stay in this browser.'}</p>{owner?<><button disabled={working||!loaded} onClick={()=>void importLocal()}>Import personal memories from this browser</button><button onClick={()=>void client!.auth.signOut()}>Sign out</button></>:<Account/>}{memories.length===0?<p>No memories yet. Step into a gallery and choose an empty frame.</p>:<div className="collection-list">{memories.map(m=><div key={m.id}><button onClick={()=>{setPanel(null);setPlace(m.room);history.pushState(null,'','#'+m.room);setSelected(m.slot)}}><strong>{m.title}<small className="memory-kind">{m.kind==='demo'?'Demo sample':m.kind==='test'?'Test memory':'Personal memory'}</small></strong><span>{m.date} · {m.room}</span></button>{owner&&<><button disabled={working} onClick={()=>{setEditing(m);setPlace(m.room);setPanel(null);setEditor(m.slot)}}>Edit</button><button disabled={working} onClick={async()=>{if(!window.confirm('Delete this private memory and its files?'))return;setWorking(true);try{await removeCloud(m);setMemories(old=>old.filter(x=>x.id!==m.id))}catch{setAccountMessage('Deletion could not be confirmed. Reload to check your collection.')}finally{setWorking(false)}}}>Delete</button></>}</div>)}</div>}<button className="solid-button" onClick={()=>navigate('hall')}>Return to the main hall</button><p role="status">{accountMessage}</p></Dialog>}
 
- {editor!==null&&room&&<MemoryEditor room={room.id} slot={editor} memories={memories} onClose={()=>setEditor(null)} onSaved={saved}/>}
+ {editor!==null&&room&&!owner&&<Dialog title="Keep this day." onClose={()=>{sessionStorage.removeItem("museum-create");setEditor(null)}}><Account/></Dialog>}
+ {editor!==null&&room&&owner&&<MemoryEditor initial={editing} owner={owner} room={room.id} slot={editor} memories={memories} onClose={()=>{setEditing(undefined);setEditor(null)}} onSaved={saved}/>}
 
  {viewer&&<MemoryViewer memory={viewer} reduced={reduced} onClose={()=>setViewer(null)}/>}
 

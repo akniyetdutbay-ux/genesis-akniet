@@ -9,15 +9,16 @@
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
-    "@react-three/fiber": "^9.0.0",
-    "@gsap/react": "^2.1.0",
     "@fontsource/cormorant-garamond": "^5.2.0",
     "@fontsource/dm-sans": "^5.2.0",
+    "@gsap/react": "^2.1.0",
+    "@react-three/fiber": "^9.0.0",
+    "@supabase/supabase-js": "2.119.2",
     "gsap": "^3.13.0",
+    "lucide-react": "^0.468.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "three": "^0.180.0",
-    "lucide-react": "^0.468.0"
+    "three": "^0.180.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

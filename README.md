@@ -58,3 +58,15 @@ Technical references used: https://r3f.docs.pmnd.rs/api/canvas and https://gsap.
 
 ## Public testing release
 Open https://museum-of-days-seven.vercel.app/ for the public museum. See PUBLIC-TESTING.md for visitor instructions, local-storage behaviour and reset scope. The visitor guide is available from every screen. Four labelled demo memories are created once per browser; empty frames remain available. Personal memories are preserved by Reset Demo Data.
+
+## Account-backed museum (development branch)
+
+For GENESIS Hackathon 2026 ArtTech, Museum of Days turns diary entries, photographs and music into exhibits in four emotional rooms. The diary and room determine color, pacing, texture and motion. Codex assisted with implementation and verification.
+
+From a fresh clone run `npm ci`, copy `.env.example` to `.env.local`, set the project URL and publishable key, then run `npm run dev`. Build with `npm run build`. The public deployment above documents the earlier release.
+
+Apply the SQL files in `supabase/migrations` in order on a fresh Supabase project. The private bucket is memory-media. Each authenticated user owns their rows and media prefix. Sharing is disabled. Collection supports explicit import of personal IndexedDB memories, editing and confirmed deletion. Imported originals remain local.
+
+In Supabase Authentication > URL Configuration set Site URL to https://museum-of-days-seven.vercel.app and allow the local development origin and production return URL. In Google Cloud create a Web OAuth client, register the Supabase HTTPS callback ending in /auth/v1/callback and enter the credentials in Supabase Authentication > Providers > Google. In Authentication > Email configure a verified sender and custom SMTP before inviting outside reviewers. Test a real signup, confirmation link and password reset from an external mailbox. Set the two VITE variables in Vercel before building the new release. Keep SMTP and Google secrets solely in provider settings.
+
+`tests/cloud-isolation.mjs` exercises real Auth, PostgreSQL and Storage using two dedicated confirmed temporary users. Supply MUSEUM_QA privately as an array of two [id,email,password] tuples to Node with --env-file=.env.local. Do not use production user accounts. The earlier Playwright tests describe the IndexedDB demo release.
