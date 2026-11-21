@@ -1,3 +1,4 @@
+import { AtelierModel } from './AtelierModel';
 import { MemorySurface } from './Exhibits';
 import type { Memory } from './memories';
 import { memo, useMemo } from 'react';
@@ -58,8 +59,7 @@ export const Exterior = memo(function Exterior() {
  <Box p={[0, -.68, 15]} s={[70, .4, 40]} c="#d1c9b9" texture/>
  {[0, 1, 2, 3].map(i => <Box key={i} p={[0, -.48 + i * .16, 8.5 - i * .6]} s={[20 - i * .5, .2, 5 - i * .8]} c={i % 2 ? '#d9d1c1' : '#c9c1b0'} texture/>)}
  {[-1, 1].map(side => <group key={side}><Box p={[side * 9, 5, 4.5]} s={[10, 10, 1.5]} texture/>{Array.from({ length: 13 }, (_, i) => <Box key={i} p={[side * 9, .4 + i * .73, 5.28]} s={[10, .022, .025]} c="#b8ad97"/>)}{[6.2, 10.5, 13].map(x => <group key={x}><Box p={[side * x, 4.1, 5.4]} s={[1.15, 7.4, .48]} texture/><Box p={[side * x, 7.95, 5.5]} s={[1.65, .35, .8]} texture/></group>)}<Box p={[side * 3.2, 2.75, 4.5]} s={[1.8, 5.5, 1.5]} texture/>{[3.6, 5.05].map(x => <Column key={x} x={side * x} z={6.05}/>)}<Box p={[side * 8.5, .4, 5.5]} s={[9, .8, 1.2]} texture/></group>)}
- <Spandrel />{[0, .2, .45].map((offset, i) => <Arch key={i} width={4.6 + offset * 2} thickness={.14} depth={.23} p={[0, 0, 5.25 + i * .16]} c={i === 1 ? '#cbbfa8' : stone}/>)}
- {Array.from({ length: 17 }, (_, i) => { const a = i * Math.PI / 16; return <mesh key={i} position={[Math.cos(a) * 2.82, 5.5 + Math.sin(a) * 2.82, 5.6]} rotation-z={a - Math.PI / 2} castShadow><boxGeometry args={[.19, .48, .32]}/><meshStandardMaterial color={i % 2 ? '#ded5c3' : '#d0c4ad'} map={stoneTexture()}/></mesh>; })}
+ <Spandrel /><AtelierModel name="limestone-portal" position={[0,-.27,5.69]} scale={[1.42,1.49,1.1]}/>
  <Box p={[0, 8.5, 5.5]} s={[11.8, .22, 1.05]} texture/><Box p={[0, 9.15, 5]} s={[28, 1.08, 1.3]} texture/>
  <mesh position={[0, 9.13, 5.67]}><planeGeometry args={[7.9, .97]}/><meshBasicMaterial transparent map={inscriptionTexture('M U S E U M   O F   D A Y S')}/></mesh>
  {[9.78, 10.05, 10.25].map((y, i) => <Box key={y} p={[0, y, 5.2]} s={[28 + i * .3, .17, 1.8 + i * .15]} texture/>)}
@@ -84,7 +84,7 @@ function FrameArt({ p, width = 2, height = 2.5, room = 'glow', seed = 11, frame 
     memory?: Memory; empty?: boolean;
 }) {
     return <group position={p}>
- <Box p={[0, 0, 0]} s={[width + .26, height + .26, .14]} c={frame} metal={.45} rough={.35}/><Box p={[0, 0, .085]} s={[width + .1, height + .1, .04]} c="#e7dfca"/>
+ <AtelierModel name="gallery-molding" finish={room} scale={[width/1.95,height/2.45,1]}/><Box p={[0, 0, 0]} s={[width+.08,height+.08,.10]} c={frame}/><Box p={[0, 0, .085]} s={[width + .1, height + .1, .04]} c="#e7dfca"/>
  {empty ? <MemorySurface memory={memory} onClick={onClick!}/> : <mesh position={[0, 0, .12]} onClick={onClick} onPointerOver={onClick ? () => { document.body.style.cursor = 'pointer'; } : undefined} onPointerOut={onClick ? () => { document.body.style.cursor = ''; } : undefined}><planeGeometry args={[width, height]}/><meshStandardMaterial map={paintingTexture(room, seed)} roughness={1}/></mesh>}
  <Box p={[width * .32, -height / 2 - .4, .06]} s={[.52, .19, .03]} c="#e6e0d0"/>
  <Box p={[0, height / 2 + .34, .28]} s={[width * .65, .045, .22]} c={brass} metal={.6}/>
@@ -94,7 +94,7 @@ function Sculpture({ type = 'hall' }: {
     type?: string;
 }) { return <group position={[0, 0, -14]}><Cylinder p={[0, .14, 0]} r={1.45} h={.28} c="#aaa494"/><Cylinder p={[0, .85, 0]} r={.73} h={1.45} c="#ddd5c4"/>{type === 'pulse' ? <group position={[0, 2.4, 0]} rotation={[.25, .45, .1]}>{[-.5, 0, .5].map((x, i) => <Box key={i} p={[x, i * .25, 0]} s={[.22, 2.4, .8]} c="#8f8980" metal={.85} rough={.25} rotation={-.3 + i * .3}/>)}</group> : <group position={[0, 2.45, 0]} rotation={[.15, .35, -.2]}><mesh castShadow><torusGeometry args={[1, .17, 18, 80]}/><meshStandardMaterial color={type === 'hush' ? '#a7b2a5' : brass} metalness={.7} roughness={.27}/></mesh><mesh rotation-y={1.05} castShadow><torusGeometry args={[.77, .12, 16, 64]}/><meshStandardMaterial color="#b7a372" metalness={.65} roughness={.3}/></mesh></group>}</group>; }
 export const Hall = memo(function Hall() {
-    return <group><Floor />
+    return <group><Floor />{[-10,-5,0,5,10].map(x=><group key={x} position={[x,4.4,-11.6]}><AtelierModel name="alabaster-lantern" scale={[1.25,1.25,1.25]}/></group>)}
  <Box p={[-11, 5.6, -10]} s={[.6, 11.2, 31]} texture/><Box p={[11, 5.6, -10]} s={[.6, 11.2, 31]} texture/><Box p={[0, 5.6, -25]} s={[22, 11.2, .6]} texture/>
  {[1, -7, -15, -23].map(z => <group key={z}><Arch width={12} spring={4.9} thickness={.45} depth={.55} p={[0, 0, z]} c="#c9bca5"/>{[-1, 1].map(s => <Column key={s} x={s * 6} z={z + .4} h={5.2} r={.35}/>)}</group>)}
  <Box p={[0, 11.2, -10]} s={[22, .25, 31]} c="#c6bca6"/>{[-3, -11, -19].map(z => <group key={z}><Box p={[0, 11.02, z]} s={[5, .15, 4]} c="#e5e2d5"/><mesh position={[0, 10.91, z]} rotation-x={Math.PI / 2}><planeGeometry args={[4.3, 3.3]}/><meshBasicMaterial color="#fff4d6"/></mesh></group>)}
