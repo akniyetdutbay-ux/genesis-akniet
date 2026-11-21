@@ -49,3 +49,13 @@
 }
 .pan-instruction{display:none}
 @media(max-aspect-ratio: 85/100){.pan-instruction{display:inline}.museum[data-place="hall"] canvas{touch-action:none}}
+.living-memory[open]{background:linear-gradient(110deg,color-mix(in srgb,var(--memory-color) 15%,var(--paper)),var(--paper) 65%)}
+.living-memory.layout-folio .memory-image{width:82%;justify-self:center}
+.living-memory.layout-panorama .memory-image{height:68%;align-self:center}
+.living-memory.layout-pair .companion-print{width:clamp(115px,17vw,250px)}
+.living-memory.layout-sequence .companion-print{transform:rotate(-3deg);left:6.8vw}
+.living-memory.finish-vellum .memory-story{border-top-style:double;border-top-width:3px}
+.living-memory.animated .memory-image img{animation-name:var(--photo-motion);animation-duration:var(--duration)}
+.living-memory.animated .memory-story p,.living-memory.animated .memory-image{animation-duration:var(--arrival)}
+.print-index{display:flex;gap:.5rem;flex-wrap:wrap}.print-index button{color:inherit;background:transparent;border:0;border-bottom:3px solid;padding:.5rem;font:inherit;opacity:.65}.print-index button[aria-current]{opacity:1;font-weight:bold}
+@media(max-width:700px){.living-memory.layout-folio .memory-image,.living-memory.layout-panorama .memory-image{width:100%;height:100%}.living-memory .companion-print{max-width:28%}.living-memory.layout-sequence .companion-print{left:0}}
