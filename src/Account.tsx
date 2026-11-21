@@ -52,7 +52,7 @@ export function Account({recovery=false,done}:{recovery?:boolean;done?:()=>void}
  sessionStorage.setItem('museum-email-flow','yes');sessionStorage.setItem('museum-login','yes');
  if(mode==='signup'){const {data,error}=await auth.signUp({email:address,password,options:{emailRedirectTo:redirect}});if(error)throw error;
  if(data.session)setMessage('Your account is ready. You are signed in.');
- else{remember();cooldown();setVerificationCode('');setMessage('Your confirmation code is on its way. Check your inbox and spam folder.')}}
+ else{remember();cooldown();setVerificationCode('');setMessage('Check your inbox and spam folder for your confirmation email.')}}
  else{const {error}=await auth.signInWithPassword({email:address,password});if(error)throw error;setMessage('You are signed in.')}
  }
  }catch(error){sessionStorage.removeItem('museum-email-flow');
@@ -61,12 +61,12 @@ export function Account({recovery=false,done}:{recovery?:boolean;done?:()=>void}
  const messages:Record<string,string>={
  user_already_exists:'This email is already registered. Sign in or reset your password.',
  email_exists:'This email is already registered. Sign in or reset your password.',
- email_not_confirmed:'Confirm your email before signing in. Check your inbox and spam folder or request another link.',
+ email_not_confirmed:'Confirm your email before signing in. Check your inbox and spam folder or request a new code.',
  invalid_credentials:'Incorrect email or password. Try again or reset your password.',
  email_address_not_authorized:'The museum mail service cannot send confirmation to this address. Contact the museum team.',
  email_provider_disabled:'Email accounts are currently unavailable.',signup_disabled:'Registration is currently unavailable.',
  weak_password:'Choose a stronger password.',email_address_invalid:'Enter a valid email address.'};
- if(e.status===429){cooldown(Math.max(60,Number(e.message?.match(/(\d+) seconds/i)?.[1])||0));if(mode==='signup')remember();setMessage('Too many requests. Check your inbox for the previous link and wait before requesting another.')}
+ if(e.status===429){cooldown(Math.max(60,Number(e.message?.match(/(\d+) seconds/i)?.[1])||0));if(mode==='signup')remember();setMessage('Too many requests. Check your inbox for the previous email and wait before requesting another.')}
  else setMessage(messages[e.code??'']||(/sending.*email|smtp/i.test(e.message??'')?'The confirmation email could not be sent. Contact the museum team about email delivery.':/fetch|network|timeout/i.test((e.name??'')+' '+e.message)?'Could not reach the museum. Check your connection and try again.':e.message||'Please try again.'));
  }finally{setBusy(false)}
  }
