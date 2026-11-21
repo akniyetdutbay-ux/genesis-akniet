@@ -2,7 +2,7 @@ import { readCloud } from './cloud';
 import { useEffect, useState } from 'react';
 import { type Room, type RoomId } from './data';
 export interface OpeningClip {kind:"video";file:Blob}
-export interface Memory {sources?:string[];clip?:OpeningClip;media?:{pictures:string[];audio?:string;audioUrl?:string;expires?:number};track?:import("./MusicSearch").Track;cloud?:boolean;id:string;kind?:'demo'|'test'|'personal';date:string;title:string;diary:string;room:RoomId;slot:number;photos:Blob[];musicUrl:string;audio?:Blob;visual:import('./artDirection').ArtDirection;createdAt:string}
+export interface Memory {demoEdition?:number;sources?:string[];clip?:OpeningClip;media?:{pictures:string[];audio?:string;audioUrl?:string;expires?:number};track?:import("./MusicSearch").Track;cloud?:boolean;id:string;kind?:'demo'|'test'|'personal';date:string;title:string;diary:string;room:RoomId;slot:number;photos:Blob[];musicUrl:string;audio?:Blob;visual:import('./artDirection').ArtDirection;createdAt:string}
 export { interpret } from './artDirection';
 function database():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const request=indexedDB.open('museum-of-days',2);request.onupgradeneeded=()=>{for(const store of ['memories','meta'])if(!request.result.objectStoreNames.contains(store))request.result.createObjectStore(store,{keyPath:'id'})};request.onsuccess=()=>{request.result.onversionchange=()=>request.result.close();resolve(request.result)};request.onerror=()=>reject(request.error);request.onblocked=()=>reject(new Error('Close other museum tabs and try again.'))})}
 function complete(tx:IDBTransaction,db:IDBDatabase):Promise<void>{return new Promise((resolve,reject)=>{tx.oncomplete=()=>{db.close();resolve()};tx.onabort=()=>{db.close();reject(tx.error??new Error('Local storage transaction failed.'))}})}
@@ -11,7 +11,17 @@ export async function saveMemory(memory:Memory){const db=await database();const 
 export async function initializeDemo(force=false){
  const db=await database();
  const initialized=await new Promise<boolean>((resolve,reject)=>{const tx=db.transaction('meta');const req=tx.objectStore('meta').get('demo-initialized');req.onsuccess=()=>resolve(!!req.result);req.onerror=()=>reject(req.error)});db.close();
- if(initialized&&!force)return;
+ if(initialized&&!force){
+ const id='museum-demo-v1-glow',lookup=await database();
+ const old=await new Promise<Memory|undefined>((resolve,reject)=>{const req=lookup.transaction('memories').objectStore('memories').get(id);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
+ lookup.close();
+ if(old?.kind!=='demo'||old.demoEdition===2)return;
+ const {lakeMemory}=await import('./demo');const sample=await lakeMemory();
+ const target=await database(),tx=target.transaction('memories','readwrite'),done=complete(tx,target);
+ const store=tx.objectStore('memories'),req=store.get(id);
+ req.onsuccess=()=>{if(req.result?.kind==='demo'&&!req.result.demoEdition)store.put({...sample,slot:req.result.slot})};
+ return done;
+ }
  const {sampleMemories}=await import('./demo');const samples=await sampleMemories();
  const target=await database();const tx=target.transaction(['memories','meta'],'readwrite');const done=complete(tx,target);
  // Recheck inside the write transaction: safe against concurrent first visits and reset.
