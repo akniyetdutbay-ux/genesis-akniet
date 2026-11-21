@@ -26,9 +26,15 @@ async function retryCleanup(owner:string){
     }
   }catch{/* A later visit can retry a failed cleanup. */}
 }
+export async function googleEnabled(){
+  const response=await fetch(url+'/auth/v1/settings',{headers:{apikey:key}});
+  if(!response.ok)throw Error('Cannot reach the account service. Please try again.');
+  const settings=await response.json();return settings.external?.google===true;
+}
+
 export async function saveCloud(memory:Memory, owner:string, replacing=false, phase?:(message:string)=>void) {
   const previous=await pathsFor(memory.id,!replacing);
-  phase?.('Uploading media�');
+  phase?.('Uploading media...');
   const uploaded:string[]=[];
   async function upload(file:Blob) {
     if(file.size>25*1024*1024) throw Error('Each file must be under 25 MB.');
@@ -56,7 +62,7 @@ export async function saveCloud(memory:Memory, owner:string, replacing=false, ph
     for(const photo of memory.photos) pictures.push({path:await upload(photo),type:photo.type,size:photo.size});
     const path=memory.audio ? await upload(memory.audio) : null;
     const {id,date,title,diary,room,slot,visual}=memory;
-    phase?.('Saving your memory�');
+    phase?.('Saving your memory...');
     submitted=true;
     const {error}=await client!.rpc('store_day',{day:{id,date,title,diary,room,slot,visual:{...visual,previewPath},visibility:'private'},pictures,music:{url:memory.musicUrl,path,title:memory.track?.title,artist:memory.track?.artist,track_id:memory.track?.id}});
     if(error){if(error.code && /^([0-9A-Z]{5}|PGRST\d+)$/.test(error.code)) submitted=false; throw error;}
