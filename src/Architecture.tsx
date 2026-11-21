@@ -1,3 +1,4 @@
+import { Installation } from "./Installation";
 import { AtelierModel } from './AtelierModel';
 import { MemorySurface } from './Exhibits';
 import type { Memory } from './memories';
@@ -115,7 +116,7 @@ export const Gallery = memo(function Gallery({ room, onSelect, selected }: {
  <Box p={[0, 13.6, -length / 2 + 4]} s={[20, .3, length]} c={room.id === 'pulse' ? '#514649' : '#c9c8b8'}/>
  {[0, -8, -16, -24].map(z => <group key={z}><Arch width={17.8} spring={4.6} thickness={.25} p={[0, 0, z]} c={room.id === 'pulse' ? '#a88778' : '#c8c6b5'}/>{room.id !== 'pulse' && <><Column x={-8.9} z={z} h={4.7} r={.27}/><Column x={8.9} z={z} h={4.7} r={.27}/></>}</group>)}
  </group>{room.works.map((art, i) => { if(Math.abs(i-anchor)>3)return null; const p = exhibitionPosition(i, room.id); return <group key={`${room.id}-${art.seed}`} position={[p[0], 0, p[2]]} rotation-y={room.id === 'pulse' ? (i % 2 ? -.38 : .25) : room.id === 'echo' ? (i % 2 ? .12 : -.08) : 0}><Box p={[0, (room.id === 'pulse' ? 7 : room.id === 'echo' ? 6.3 : room.id === 'hush' ? 4.8 : 5.5) / 2, -.2]} s={[room.id === 'hush' ? 3.7 : 4.6, room.id === 'pulse' ? 7 : room.id === 'echo' ? 6.3 : room.id === 'hush' ? 4.8 : 5.5, .3]} c={room.id === 'glow' ? '#b5a086' : room.wall} texture/><Box p={[0, .15, -.14]} s={[4.8, .3, .55]} c={room.id === 'echo' ? '#544b43' : '#b9b4a5'}/><FrameArt p={[0, 2.7, .02]} width={1.95} height={2.45} room={room.id} seed={art.seed} empty memory={art.memory} frame={room.id === 'hush' ? '#aab3a1' : room.id === 'echo' ? '#776b56' : brass} onClick={() => onSelect(i)}/></group>; })}
- <Sculpture type={room.id}/>
+ <Installation room={room.id}/>{room.id!=="hush" && room.id!=="echo" && <Sculpture type={room.id}/>}
  {room.id === 'hush' && <><Box p={[0, .55, -6]} s={[3, .3, 1.2]} c="#bfc5b7"/><Box p={[-1, .22, -6]} s={[.25, .5, .9]} c="#9ba794"/><Box p={[1, .22, -6]} s={[.25, .5, .9]} c="#9ba794"/>{[-1, 1].map(s => <mesh key={s} position={[s * 8.3, 3.8, -6]} rotation-y={s * .25}><planeGeometry args={[2, 6.8]}/><meshStandardMaterial color="#e1e5d9" transparent opacity={.36} side={THREE.DoubleSide}/></mesh>)}</>}
  {room.id === 'echo' && [-1, 1].flatMap(s => Array.from({ length: 15 }, (_, i) => <Cylinder key={`${s}-${i}`} p={[s * (7 + i * .12), 3.6, -12]} r={.13} h={7.2} c={i % 2 ? '#646e7d' : '#7e8794'}/>))}
  {room.id === 'pulse' && [-1, 1].flatMap(s => [0, 1, 2, 3].map(i => <Box key={`${s}-${i}`} p={[s * 8, 3.8, -4 - i * 4]} s={[.15, 7.6, .65]} c="#b49a84" metal={.6} rotation={s * .35}/>))}

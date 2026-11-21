@@ -34,7 +34,7 @@ function CameraRig({ place, selected, reduced, onSettled }: Pick<Props, 'place' 
             target = [p[0], 2.7, p[2]];
         }
         else if (room) {
-            pos = [0, 3.25, mobile ? 9.4 : 6];
+            pos = [0, 3.25, mobile ? Math.min(33,16/Math.max(.4,size.width/size.height)) : 6];
             target = [0, 3, -10];
         }
         if(room && previous.current!==place){camera.position.set(0,3.25,mobile?11:9);aim.current.set(0,3,-10)}
@@ -61,9 +61,9 @@ function Stage({ place, selected, reduced, quality, onReady, onSettled, onSelect
     } }, [place, invalidate]);
     return <>
  <fog attach="fog" args={[room?.wall ?? '#d7cbb5', room ? 22 : 38, room ? 48 : 90]}/>
- <ambientLight intensity={room?.id === 'echo' ? .95 : 1.25} color={room?.light ?? '#fff0d8'}/>
+ <ambientLight intensity={room?.id === 'echo' ? .52 : room?.id === 'hush' ? .88 : .74} color={room?.light ?? '#fff0d8'}/>
  <hemisphereLight args={['#d9e9f2', '#a5977b', 1.1]}/>
- <directionalLight ref={sun} position={[-9, 16, 10]} intensity={3.1} color="#fff1d6" castShadow={quality === 'high'} shadow-mapSize={[2048, 2048]} shadow-camera-left={-22} shadow-camera-right={22} shadow-camera-top={22} shadow-camera-bottom={-22} shadow-camera-near={1} shadow-camera-far={65} shadow-bias={-.00025} shadow-normalBias={.035}/>
+ <directionalLight ref={sun} position={[-9, 16, 10]} intensity={room?.id==='hush'?1.45:2.4} color={room?.id==='glow'?'#ffe3ac':room?.id==='echo'?'#e0dce1':'#fff1df'} castShadow={quality === 'high'} shadow-mapSize={[2048, 2048]} shadow-camera-left={-22} shadow-camera-right={22} shadow-camera-top={22} shadow-camera-bottom={-22} shadow-camera-near={1} shadow-camera-far={65} shadow-bias={-.00025} shadow-normalBias={.035}/>
  <pointLight position={[0, 6, -6]} intensity={90} distance={24} decay={2} color={room?.light ?? '#fff1ce'}/>
  <pointLight position={[-5, 5, -17]} intensity={65} distance={20} decay={2} color={room?.light ?? '#ffebc6'}/>
  <pointLight position={[5, 5, -16]} intensity={65} distance={20} decay={2} color={room?.light ?? '#ffebc6'}/>
