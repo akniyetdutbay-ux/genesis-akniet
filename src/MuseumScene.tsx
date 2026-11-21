@@ -27,7 +27,7 @@ function CameraRig({ place, selected, reduced, onSettled }: Pick<Props, 'place' 
         const isEntry = place === 'entrance';
         const room = roomById(place);
         let pos = [0, isEntry ? 4.6 : 3.05, isEntry ? (mobile ? 25 : 20) : 1.7];
-        if(mobile && place==='hall')pos[0]=doorX.glow;
+        if(mobile && place==='hall')pos[0]=roomById(previous.current)?doorX[previous.current as RoomId]:doorX.glow;
         let target = [pos[0], isEntry ? (mobile ? 3.8 : 5.1) : 3.2, isEntry ? 4 : -15];
         if (room && selected !== null) {
             const p = exhibitionPosition(selected, room.id);
@@ -50,22 +50,42 @@ function CameraRig({ place, selected, reduced, onSettled }: Pick<Props, 'place' 
     useEffect(()=>{
         if(place==='entrance'||selected!==null||size.width/size.height>=.85)return;
         const canvas=gl.domElement;
-        let start:number|undefined, origin=0, dragged=false;
-        const down=(event:PointerEvent)=>{start=event.clientX;origin=camera.position.x;dragged=false;};
+        let pointer:number|null=null, start=0, origin=0, dragged=false;
+        let settle:gsap.core.Tween|undefined;
+        const position=(x:number)=>{
+            camera.position.x=x;aim.current.x=x;camera.lookAt(aim.current);invalidate();
+        };
+        const down=(event:PointerEvent)=>{
+            if(!event.isPrimary||event.button!==0)return;
+            settle?.kill();pointer=event.pointerId;start=event.clientX;origin=camera.position.x;dragged=false;
+        };
         const move=(event:PointerEvent)=>{
-            if(start===undefined)return;
+            if(event.pointerId!==pointer)return;
             const delta=event.clientX-start;
             if(Math.abs(delta)<8&&!dragged)return;
             dragged=true;
-            const x=THREE.MathUtils.clamp(origin-delta*8/size.width,-7.5,7.5);
-            camera.position.x=x;aim.current.x=x;camera.lookAt(aim.current);invalidate();
+            position(THREE.MathUtils.clamp(origin-delta*8/size.width,doorX.glow,doorX.pulse));
         };
-        const up=()=>{start=undefined;};
+        const up=(event:PointerEvent)=>{
+            if(event.pointerId!==pointer)return;
+            pointer=null;
+            if(!dragged||place!=='hall')return;
+            const delta=event.clientX-start;
+            const doors=Object.values(doorX);
+            const nearest=(x:number)=>doors.reduce((a,b)=>Math.abs(a-x)<Math.abs(b-x)?a:b);
+            let x=nearest(camera.position.x);
+            if(event.type==='pointerup'&&Math.abs(delta)>size.width*.14&&x===nearest(origin)){
+                const next=doors.indexOf(x)-Math.sign(delta);
+                x=doors[THREE.MathUtils.clamp(next,0,doors.length-1)];
+            }
+            const pan={x:camera.position.x};
+            settle=gsap.to(pan,{x,duration:reduced?0:.22,ease:'power2.out',onUpdate:()=>position(pan.x)});
+        };
         const click=(event:MouseEvent)=>{if(dragged){event.stopImmediatePropagation();dragged=false;}};
         canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);
         window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);canvas.addEventListener('click',click,true);
-        return ()=>{canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);canvas.removeEventListener('click',click,true);};
-    },[camera,gl,invalidate,place,size,selected]);
+        return ()=>{settle?.kill();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);canvas.removeEventListener('click',click,true);};
+    },[camera,gl,invalidate,place,size,selected,reduced]);
     return null;
 }
 function Stage({ place, selected, reduced, quality, onReady, onSettled, onSelect, memories, door, onDoor, onArrival }: Props) {
