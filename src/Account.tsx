@@ -45,7 +45,7 @@ export function Account({recovery=false,done}:{recovery?:boolean;done?:()=>void}
  if(!resend&&(recovery||mode!=='reset')&&password.length<(recovery||mode==='signup'?8:1)){setMessage(recovery||mode==='signup'?'Choose a password with at least eight characters.':'Enter your password.');return}
  setBusy(true);setMessage('');
  try{
- if(resend){const {error}=await auth.resend({type:'signup',email:address,options:{emailRedirectTo:redirect}});if(error)throw error;cooldown();setMessage('Confirmation requested. Check your inbox and spam folder for the latest link.')}
+ if(resend){const {error}=await auth.resend({type:'signup',email:address,options:{emailRedirectTo:redirect}});if(error)throw error;cooldown();setMode('signup');setMessage('Enter the latest code from your inbox or spam folder.')}
  else if(recovery){const {error}=await auth.updateUser({password});if(error)throw error;done?.()}
  else if(mode==='reset'){const {error}=await auth.resetPasswordForEmail(address,{redirectTo:redirect});if(error)throw error;setMessage('If this email has an account, check your inbox for the reset link.')}
  else{
@@ -57,7 +57,7 @@ export function Account({recovery=false,done}:{recovery?:boolean;done?:()=>void}
  }
  }catch(error){sessionStorage.removeItem('museum-email-flow');
  const e=error as {code?:string;message?:string;status?:number;name?:string};
- if(e.code==='email_not_confirmed')remember();
+ if(e.code==='email_not_confirmed'){remember();setMode('signup')}
  const messages:Record<string,string>={
  user_already_exists:'This email is already registered. Sign in or reset your password.',
  email_exists:'This email is already registered. Sign in or reset your password.',
@@ -119,7 +119,7 @@ export function Account({recovery=false,done}:{recovery?:boolean;done?:()=>void}
  <form noValidate onSubmit={e=>{e.preventDefault();void submit(e.currentTarget)}}>
  {!recovery&&<label>Email<input type="email" required name="email" autoComplete="email" maxLength={254} disabled={busy} value={email} onChange={e=>{setEmail(e.target.value);setMessage('')}}/></label>}
  {(recovery||mode!=='reset'&&!confirming)&&<label>Password<span className="password-entry"><input type={showPassword?'text':'password'} required name="password" autoComplete={mode==='login'&&!recovery?'current-password':'new-password'}/><button type="button" className="password-reveal" disabled={busy} aria-label={showPassword?'Hide password':'Show password'} aria-pressed={showPassword} onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></span></label>}
- <button className="solid-button" disabled={busy}>{busy?'Please wait…':recovery?'Save password':mode==='reset'?'Send recovery email':mode==='signup'&&remaining?'Try again in '+remaining+'s':confirming?'Resend confirmation email':mode==='signup'?'Create account':'Continue with Email'}</button>
+ <button className="solid-button" disabled={busy||(!recovery&&mode==='signup'&&remaining>0)}>{busy?'Please wait…':recovery?'Save password':mode==='reset'?'Send recovery email':mode==='signup'&&remaining?'Try again in '+remaining+'s':confirming?'Resend confirmation email':mode==='signup'?'Create account':'Continue with Email'}</button>
  <p role="status">{message}</p>
  {waiting&&mode==='login'&&!recovery&&<button type="button" disabled={busy||remaining>0} onClick={e=>void submit(e.currentTarget.form!,true)}>{remaining?'Resend in '+remaining+'s':'Resend confirmation email'}</button>}</form>
  {!recovery&&<><button className="demo-entry" disabled={busy} onClick={()=>{setMode('reset');setMessage('')}}>Forgot Password?</button><div className="account-rule">OR</div><button className="google-entry" onClick={async()=>{sessionStorage.setItem('museum-login','yes');try{if(!await googleEnabled()){setMessage('Google sign-in is currently unavailable. Continue with email or explore the demo.');return}const {error}=await auth.signInWithOAuth({provider:'google',options:{redirectTo:redirect}});if(error)throw error}catch(e){setMessage(e instanceof Error?e.message:'Google sign-in could not start.')}}}><GoogleMark/>Continue with Google</button></>}
