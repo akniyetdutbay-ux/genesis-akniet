@@ -1,5 +1,6 @@
 import { lazy,Suspense,useEffect,useState } from 'react';
 import {client,googleEnabled} from './cloud';
+import {Eye,EyeOff,MailCheck} from 'lucide-react';
 const App=lazy(()=>import('./App'));
 
 export function AccountRoot(){
@@ -26,6 +27,8 @@ export function Account({recovery=false,done}:{recovery?:boolean;done?:()=>void}
  const [mode,setMode]=useState<'login'|'signup'|'reset'>(pending?'signup':'login');
  const [message,setMessage]=useState(pending?'Open the confirmation link in your inbox to enter the museum.':'');
  const [busy,setBusy]=useState(false);
+ const [showPassword,setShowPassword]=useState(false);
+ const [verificationCode,setVerificationCode]=useState('');
  const [until,setUntil]=useState(()=>Number(sessionStorage.getItem('museum-email-retry'))||0);
  const [now,setNow]=useState(Date.now);
  const remaining=Math.max(0,Math.ceil((until-now)/1000));
@@ -49,7 +52,7 @@ export function Account({recovery=false,done}:{recovery?:boolean;done?:()=>void}
  sessionStorage.setItem('museum-email-flow','yes');sessionStorage.setItem('museum-login','yes');
  if(mode==='signup'){const {data,error}=await auth.signUp({email:address,password,options:{emailRedirectTo:redirect}});if(error)throw error;
  if(data.session)setMessage('Your account is ready. You are signed in.');
- else{remember();cooldown();setMessage('Open the confirmation link in your inbox to enter the museum. Check spam too. Already registered? Sign in.')}}
+ else{remember();cooldown();setVerificationCode('');setMessage('Your confirmation code is on its way. Check your inbox and spam folder.')}}
  else{const {error}=await auth.signInWithPassword({email:address,password});if(error)throw error;setMessage('You are signed in.')}
  }
  }catch(error){sessionStorage.removeItem('museum-email-flow');
@@ -68,12 +71,55 @@ export function Account({recovery=false,done}:{recovery?:boolean;done?:()=>void}
  }finally{setBusy(false)}
  }
  const confirming=waiting&&mode==='signup'&&!recovery;
+ async function verifyCode(){
+  if(busy)return;
+  const token=verificationCode.replace(/\D/g,'');
+  if(!/^\d{6}$/.test(token)){setMessage('Enter the six-digit code from your email.');return}
+  setBusy(true);setMessage('');
+  try{
+   const {data,error}=await auth.verifyOtp({email:pending,token,type:'email'});
+   if(error)throw error;
+   sessionStorage.removeItem('museum-confirm');setPending('');setVerificationCode('');
+   if(data.session)setMessage('Email confirmed. Entering your museum…');
+   else{setMode('login');setMessage('Email confirmed. Sign in to continue.')}
+  }catch(error){
+   const e=error as {code?:string;message?:string;status?:number};
+   setMessage(e.status===429?'Too many attempts. Wait before trying again.':e.code==='otp_expired'?'This code has expired. Request a new one.':e.code==='otp_disabled'?'Email verification is unavailable right now.': 'That code is incorrect or expired. Check your latest email and try again.');
+  }finally{setBusy(false)}
+ }
+ async function resendCode(){
+  if(busy||remaining)return;
+  setBusy(true);setMessage('');
+  try{
+   const {error}=await auth.resend({type:'signup',email:pending,options:{emailRedirectTo:redirect}});
+   if(error)throw error;
+   setVerificationCode('');cooldown(60);setMessage('A new code has been requested. Check your inbox and spam folder.');
+  }catch(error){
+   const e=error as {code?:string;status?:number};
+   if(e.status===429)cooldown(60);
+   setMessage(e.code==='email_address_not_authorized'?'Our email service cannot send to this address yet. Please contact the museum team.':'The confirmation email could not be sent. Please try again later.');
+  }finally{setBusy(false)}
+ }
+ if(confirming)return <section className="account-card verification-card">
+  <div className="verification-icon" aria-hidden="true"><MailCheck size={26}/></div>
+  <p className="verification-kicker">ONE MOMENT MORE</p>
+  <h2>Unlock your museum.</h2>
+  <p className="verification-description">We’ve sent a one-time code to <strong>{pending}</strong>. Enter it below to make your memories yours alone.</p>
+  <form onSubmit={e=>{e.preventDefault();void verifyCode()}}>
+   <label htmlFor="museum-verification-code">Your verification code</label>
+   <input id="museum-verification-code" className="verification-code" name="verification-code" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6} autoComplete="one-time-code" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={verificationCode} onChange={e=>{setVerificationCode(e.target.value.replace(/\D/g,'').slice(0,6));setMessage('')}} disabled={busy} aria-describedby="museum-code-help" placeholder="000000" autoFocus/>
+   <p id="museum-code-help" className="verification-help">Six digits · one-time use · never share your code.</p>
+   <button className="solid-button" type="submit" disabled={busy||verificationCode.length!==6}>{busy?'Checking code…':'Verify & enter museum'}</button>
+   <p role="status" aria-live="polite">{message}</p>
+  </form>
+  <div className="verification-actions"><button type="button" disabled={busy||remaining>0} onClick={()=>void resendCode()}>{remaining?'Send another in '+remaining+'s':'Send another code'}</button><button type="button" disabled={busy} onClick={()=>{sessionStorage.removeItem('museum-confirm');setPending('');setEmail('');setMode('signup');setVerificationCode('');setMessage('')}}>Change email</button><button type="button" disabled={busy} onClick={()=>{setMode('login');setMessage('')}}>Already registered? Sign in</button></div>
+ </section>;
  return <section className="account-card"><h2>{recovery?'Choose a new password':mode==='reset'?'Reset your password':mode==='signup'?'Create your museum account':'Welcome to the museum'}</h2>
  {!recovery&&<div className="account-tabs">{(['login','signup'] as const).map((m,i)=><button key={m} disabled={busy} aria-pressed={mode===m} onClick={()=>{setMode(m);setMessage('')}}>{['Sign In','Sign Up'][i]}</button>)}</div>}
- <form noValidate onSubmit={e=>{e.preventDefault();if(!(mode==='signup'&&remaining&&!recovery))void submit(e.currentTarget,confirming)}}>
+ <form noValidate onSubmit={e=>{e.preventDefault();void submit(e.currentTarget)}}>
  {!recovery&&<label>Email<input type="email" required name="email" autoComplete="email" maxLength={254} disabled={busy} value={email} onChange={e=>{setEmail(e.target.value);setMessage('')}}/></label>}
- {(recovery||mode!=='reset'&&!confirming)&&<label>Password<input type="password" required name="password" autoComplete={mode==='login'&&!recovery?'current-password':'new-password'}/></label>}
- <button className="solid-button" disabled={busy||mode==='signup'&&!recovery&&remaining>0}>{busy?'Please wait…':recovery?'Save password':mode==='reset'?'Send recovery email':mode==='signup'&&remaining?'Try again in '+remaining+'s':confirming?'Resend confirmation email':mode==='signup'?'Create account':'Continue with Email'}</button>
+ {(recovery||mode!=='reset'&&!confirming)&&<label>Password<span className="password-entry"><input type={showPassword?'text':'password'} required name="password" autoComplete={mode==='login'&&!recovery?'current-password':'new-password'}/><button type="button" className="password-reveal" disabled={busy} aria-label={showPassword?'Hide password':'Show password'} aria-pressed={showPassword} onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></span></label>}
+ <button className="solid-button" disabled={busy}>{busy?'Please wait…':recovery?'Save password':mode==='reset'?'Send recovery email':mode==='signup'&&remaining?'Try again in '+remaining+'s':confirming?'Resend confirmation email':mode==='signup'?'Create account':'Continue with Email'}</button>
  <p role="status">{message}</p>
  {waiting&&mode==='login'&&!recovery&&<button type="button" disabled={busy||remaining>0} onClick={e=>void submit(e.currentTarget.form!,true)}>{remaining?'Resend in '+remaining+'s':'Resend confirmation email'}</button>}</form>
  {!recovery&&<><button className="demo-entry" disabled={busy} onClick={()=>{setMode('reset');setMessage('')}}>Forgot Password?</button><div className="account-rule">OR</div><button className="google-entry" onClick={async()=>{sessionStorage.setItem('museum-login','yes');try{if(!await googleEnabled()){setMessage('Google sign-in is currently unavailable. Continue with email or explore the demo.');return}const {error}=await auth.signInWithOAuth({provider:'google',options:{redirectTo:redirect}});if(error)throw error}catch(e){setMessage(e instanceof Error?e.message:'Google sign-in could not start.')}}}><GoogleMark/>Continue with Google</button></>}
