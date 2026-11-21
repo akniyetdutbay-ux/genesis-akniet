@@ -25,7 +25,7 @@ export async function saveCloud(memory:Memory, owner:string, replacing=false) {
     const path=memory.audio ? await upload(memory.audio) : null;
     const {id,date,title,diary,room,slot,visual}=memory;
     submitted=true;
-    const {error}=await client!.rpc('store_day',{day:{id,date,title,diary,room,slot,visual,visibility:'private'},pictures,music:{url:memory.musicUrl,path}});
+    const {error}=await client!.rpc('store_day',{day:{id,date,title,diary,room,slot,visual,visibility:'private'},pictures,music:{url:memory.musicUrl,path,title:memory.track?.title,artist:memory.track?.artist,track_id:memory.track?.id}});
     if(error){if(error.code) submitted=false; throw error;}
     if(previous.length){const cleanup=await media().remove(previous);if(cleanup.error)console.warn('Private file cleanup pending');}
   } catch(error) {
@@ -39,11 +39,11 @@ async function download(path:string) {
   return data;
 }
 export async function readCloud(owner:string):Promise<Memory[]> {
-  const {data,error}=await client!.from('memories').select('*,memory_photos(storage_path,display_order),memory_music(external_url,storage_path)').eq('user_id',owner);
+  const {data,error}=await client!.from('memories').select('*,memory_photos(storage_path,display_order),memory_music(external_url,storage_path,track_title,artist,provider_track_id)').eq('user_id',owner);
   if(error) throw error;
   return Promise.all(data.map(async row=>{
     const pictures=row.memory_photos as {storage_path:string;display_order:number}[];
-    return {id:row.id,kind:'personal',date:row.memory_date,title:row.title,diary:row.diary_text,room:row.emotional_room,slot:row.slot,visual:row.visual_settings,createdAt:row.created_at,photos:await Promise.all(pictures.sort((a,b)=>a.display_order-b.display_order).map(p=>download(p.storage_path))),musicUrl:row.memory_music?.external_url??'',audio:row.memory_music?.storage_path?await download(row.memory_music.storage_path):undefined,cloud:true};
+    return {id:row.id,kind:'personal',date:row.memory_date,title:row.title,diary:row.diary_text,room:row.emotional_room,slot:row.slot,visual:row.visual_settings,createdAt:row.created_at,photos:await Promise.all(pictures.sort((a,b)=>a.display_order-b.display_order).map(p=>download(p.storage_path))),track:row.memory_music?.provider_track_id?{id:row.memory_music.provider_track_id,title:row.memory_music.track_title,artist:row.memory_music.artist,url:row.memory_music.external_url}:undefined,musicUrl:row.memory_music?.external_url??'',audio:row.memory_music?.storage_path?await download(row.memory_music.storage_path):undefined,cloud:true};
   }));
 }
 
