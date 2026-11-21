@@ -35,8 +35,8 @@ function CameraRig({ place, selected, reduced, onSettled }: Pick<Props, 'place' 
             target = [p[0], 2.7, p[2]];
         }
         else if (room) {
-            pos = [0, 3.25, mobile ? 10 : 6];
-            target = [0, 3, -10];
+            pos = [mobile?exhibitionPosition(0,room.id)[0]:0, 3.25, mobile ? 10 : 6];
+            target = [pos[0], 3, -10];
         }
         if(room && previous.current!==place){camera.position.set(0,3.25,mobile?11:9);aim.current.set(0,3,-10)}
         if(place==='hall' && roomById(previous.current)){camera.position.set(doorX[previous.current as RoomId],2.7,-6);aim.current.set(0,3,-15)}
@@ -48,7 +48,7 @@ function CameraRig({ place, selected, reduced, onSettled }: Pick<Props, 'place' 
         return () => { tl.kill(); };
     }, [place, selected, reduced, size.width, size.height, camera, invalidate, onSettled]);
     useEffect(()=>{
-        if(place!=='hall'||size.width/size.height>=.85)return;
+        if(place==='entrance'||selected!==null||size.width/size.height>=.85)return;
         const canvas=gl.domElement;
         let start:number|undefined, origin=0, dragged=false;
         const down=(event:PointerEvent)=>{start=event.clientX;origin=camera.position.x;dragged=false;};
@@ -65,7 +65,7 @@ function CameraRig({ place, selected, reduced, onSettled }: Pick<Props, 'place' 
         canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);
         window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);canvas.addEventListener('click',click,true);
         return ()=>{canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);canvas.removeEventListener('click',click,true);};
-    },[camera,gl,invalidate,place,size]);
+    },[camera,gl,invalidate,place,size,selected]);
     return null;
 }
 function Stage({ place, selected, reduced, quality, onReady, onSettled, onSelect, memories, door, onDoor, onArrival }: Props) {

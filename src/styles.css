@@ -63,3 +63,5 @@
 .gallery-copy{left:3.3vw;right:3.3vw;bottom:78px;display:flex;align-items:baseline;gap:1.25rem;flex-wrap:wrap;padding:12px 18px;background:linear-gradient(90deg,#242820e8,#242820c9);border-top:1px solid #f3e7c878;color:#f8f1e4}
 .gallery-copy h1,.gallery-copy .gallery-line,.gallery-copy .emotion-name{margin:0}.gallery-copy h1{font-size:clamp(32px,3.3vw,54px)}.gallery-copy .gallery-line{flex:1;font-size:clamp(17px,1.6vw,24px)}.gallery-copy .art-button{margin:0}
 @media(max-width:700px){.gallery-copy{bottom:92px;gap:.3rem .8rem;padding:9px 12px;align-items:center}.gallery-copy h1{font-size:32px}.gallery-copy .gallery-line{display:none}.gallery-copy .art-button{font-size:12px;padding:6px 0}.gallery-copy .emotion-name{flex:1}}
+.living-memory .memory-image{background:var(--mount-paper,#faf6ec)}
+@media(max-aspect-ratio:85/100){.museum canvas{touch-action:none}}

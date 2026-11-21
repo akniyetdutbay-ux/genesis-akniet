@@ -4,7 +4,7 @@ type Study={ratio:number;color:string};
 export interface ArtDirection {
  color:string; seconds:number; motion:string; texture:string;
  layout?:'folio'|'panorama'|'pair'|'sequence'; energy?:Energy;
- studies?:Study[]; cadence?:number; longform?:boolean; edition?:number;
+ studies?:Study[]; cadence?:number; longform?:boolean; edition?:number; paperTone?:string;
 }
 const palette={glow:'#cb9b61',hush:'#8ca490',echo:'#71879c',pulse:'#a75a67'};
 export function suggestTitle(diary:string,room:RoomId){
@@ -15,13 +15,15 @@ export function suggestTitle(diary:string,room:RoomId){
  const suffix=ru?{glow:'в тёплом свете',hush:'в тишине дня',echo:'сквозь время',pulse:'в движении дня'}:{glow:'in afternoon light',hush:'in quiet hours',echo:'across the years',pulse:'in full motion'};
  return [words.join(' '),suffix[room]].join(' ').trim();
 }
-export function interpret(diary:string,room:RoomId,studies:Study[]=[],energy:Energy='automatic',hasMusic=false):ArtDirection{
+export function interpret(diary:string,room:RoomId,studies:Study[]=[],energy:Energy='automatic',hasMusic=false,date=''):ArtDirection{
  const energetic=/dance|rush|celebrat|танц|праздн|восторг/i.test(diary);
  const reflective=/quiet|remember|stillness|тиши|вспомина|помню/i.test(diary);
  const speed=energy==='automatic'?(energetic||room==='pulse'?'driving':reflective||room==='hush'?'quiet':'steady'):energy;
  const seconds={driving:4.8,steady:6.8,quiet:9}[speed]+(diary.length>400?1:0);
  const color=studies[0]?.color??palette[room];
- return {edition:2,studies,energy,color,seconds,cadence:(hasMusic ? .84 : 1)*seconds/6,
+ const month=Number(date.slice(5,7));
+ const paperTone=month>=4&&month<=9?"#f1e5cd":"#dce1df";
+ return {edition:2,paperTone,studies,energy,color,seconds,cadence:(hasMusic ? .84 : 1)*seconds/6,
  motion:speed==='driving'?'sweep':speed==='quiet'?'breathe':room==='echo'?'recede':'drift',
  texture:room==='echo'||reflective?'vellum':'clean',longform:diary.length>400,
  layout:studies.length>=3?'sequence':studies.length===2?'pair':(studies[0]?.ratio??1)>1.35?'panorama':'folio',
