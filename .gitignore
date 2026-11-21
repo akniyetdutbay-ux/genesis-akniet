@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.npm-cache/
+test-results/
+playwright-report/
+*.tsbuildinfo
+.vercel/
+.env*
+!.env.example
+*.pem
+*.key
+*.p12
+*.sqlite*
+*.db
+*.log
+supabase/.temp/
+uploads/
