@@ -74,7 +74,7 @@ export function Account({recovery=false,done}:{recovery?:boolean;done?:()=>void}
  async function verifyCode(){
   if(busy)return;
   const token=verificationCode.replace(/\D/g,'');
-  if(!/^\d{6}$/.test(token)){setMessage('Enter the six-digit code from your email.');return}
+  if(!/^\d{6,8}$/.test(token)){setMessage('Enter the 6–8 digit code from your email.');return}
   setBusy(true);setMessage('');
   try{
    const {data,error}=await auth.verifyOtp({email:pending,token,type:'email'});
@@ -104,12 +104,12 @@ export function Account({recovery=false,done}:{recovery?:boolean;done?:()=>void}
   <div className="verification-icon" aria-hidden="true"><MailCheck size={26}/></div>
   <p className="verification-kicker">ONE MOMENT MORE</p>
   <h2>Unlock your museum.</h2>
-  <p className="verification-description">We’ve sent a one-time code to <strong>{pending}</strong>. Enter it below to make your memories yours alone.</p>
+  <p className="verification-description">We’ve requested a one-time code for <strong>{pending}</strong>. Enter it below to make your memories yours alone.</p>
   <form onSubmit={e=>{e.preventDefault();void verifyCode()}}>
    <label htmlFor="museum-verification-code">Your verification code</label>
-   <input id="museum-verification-code" className="verification-code" name="verification-code" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6} autoComplete="one-time-code" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={verificationCode} onChange={e=>{setVerificationCode(e.target.value.replace(/\D/g,'').slice(0,6));setMessage('')}} disabled={busy} aria-describedby="museum-code-help" placeholder="000000" autoFocus/>
-   <p id="museum-code-help" className="verification-help">Six digits · one-time use · never share your code.</p>
-   <button className="solid-button" type="submit" disabled={busy||verificationCode.length!==6}>{busy?'Checking code…':'Verify & enter museum'}</button>
+   <input id="museum-verification-code" className="verification-code" name="verification-code" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={8} autoComplete="one-time-code" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={verificationCode} onChange={e=>{setVerificationCode(e.target.value.replace(/\D/g,'').slice(0,8));setMessage('')}} disabled={busy} aria-describedby="museum-code-help" placeholder="000000" autoFocus/>
+   <p id="museum-code-help" className="verification-help">Use the code shown in your email · never share it.</p>
+   <button className="solid-button" type="submit" disabled={busy||verificationCode.length<6}>{busy?'Checking code…':'Verify & enter museum'}</button>
    <p role="status" aria-live="polite">{message}</p>
   </form>
   <div className="verification-actions"><button type="button" disabled={busy||remaining>0} onClick={()=>void resendCode()}>{remaining?'Send another in '+remaining+'s':'Send another code'}</button><button type="button" disabled={busy} onClick={()=>{sessionStorage.removeItem('museum-confirm');setPending('');setEmail('');setMode('signup');setVerificationCode('');setMessage('')}}>Change email</button><button type="button" disabled={busy} onClick={()=>{setMode('login');setMessage('')}}>Already registered? Sign in</button></div>
