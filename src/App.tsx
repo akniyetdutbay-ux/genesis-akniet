@@ -263,7 +263,7 @@ export default function App({owner}:{owner:string|null}) {
 
  <div className="place-label reveal"><span className="location-line"/><span>The main hall</span></div>
 
- <section className="hall-invitation"><h1>Choose a doorway.</h1><p>Four ways to remember. Touch a door to step inside.</p><details><summary>Accessible gallery navigation</summary><nav>{rooms.map(r=><button disabled={busy} key={r.id} onClick={()=>enterDoor(r.id)}>{r.name}</button>)}</nav></details></section>
+ <section className="hall-invitation"><h1>Choose a doorway.</h1><p>Four ways to remember. <span className="pan-instruction">Swipe to look around. </span>Touch a door to step inside.</p><details><summary>Accessible gallery navigation</summary><nav>{rooms.map(r=><button disabled={busy} key={r.id} onClick={()=>enterDoor(r.id)}>{r.name}</button>)}</nav></details></section>
 
  </> : room ? <>
 

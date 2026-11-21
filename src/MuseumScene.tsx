@@ -19,7 +19,7 @@ interface Props {
     onSelect: (i: number) => void;
 }
 function CameraRig({ place, selected, reduced, onSettled }: Pick<Props, 'place' | 'selected' | 'reduced' | 'onSettled'>) {
-    const { camera, invalidate, size } = useThree();
+    const { camera, invalidate, size, gl } = useThree();
     const aim = useRef(new THREE.Vector3(0, 4.4, 4));
     const previous = useRef<Place>('entrance');
     useEffect(() => {
@@ -27,14 +27,15 @@ function CameraRig({ place, selected, reduced, onSettled }: Pick<Props, 'place' 
         const isEntry = place === 'entrance';
         const room = roomById(place);
         let pos = [0, isEntry ? 4.6 : 3.05, isEntry ? (mobile ? 25 : 20) : 1.7];
-        let target = [0, isEntry ? (mobile ? 3.8 : 5.1) : 3.2, isEntry ? 4 : -15];
+        if(mobile && place==='hall')pos[0]=doorX.glow;
+        let target = [pos[0], isEntry ? (mobile ? 3.8 : 5.1) : 3.2, isEntry ? 4 : -15];
         if (room && selected !== null) {
             const p = exhibitionPosition(selected, room.id);
             pos = [p[0], 2.75, p[2] + (mobile ? 6.4 : 5.4)];
             target = [p[0], 2.7, p[2]];
         }
         else if (room) {
-            pos = [0, 3.25, mobile ? Math.min(33,16/Math.max(.4,size.width/size.height)) : 6];
+            pos = [0, 3.25, mobile ? 10 : 6];
             target = [0, 3, -10];
         }
         if(room && previous.current!==place){camera.position.set(0,3.25,mobile?11:9);aim.current.set(0,3,-10)}
@@ -46,10 +47,29 @@ function CameraRig({ place, selected, reduced, onSettled }: Pick<Props, 'place' 
         previous.current = place;
         return () => { tl.kill(); };
     }, [place, selected, reduced, size.width, size.height, camera, invalidate, onSettled]);
+    useEffect(()=>{
+        if(place!=='hall'||size.width/size.height>=.85)return;
+        const canvas=gl.domElement;
+        let start:number|undefined, origin=0, dragged=false;
+        const down=(event:PointerEvent)=>{start=event.clientX;origin=camera.position.x;dragged=false;};
+        const move=(event:PointerEvent)=>{
+            if(start===undefined)return;
+            const delta=event.clientX-start;
+            if(Math.abs(delta)<8&&!dragged)return;
+            dragged=true;
+            const x=THREE.MathUtils.clamp(origin-delta*8/size.width,-7.5,7.5);
+            camera.position.x=x;aim.current.x=x;camera.lookAt(aim.current);invalidate();
+        };
+        const up=()=>{start=undefined;};
+        const click=(event:MouseEvent)=>{if(dragged){event.stopImmediatePropagation();dragged=false;}};
+        canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);
+        window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);canvas.addEventListener('click',click,true);
+        return ()=>{canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);canvas.removeEventListener('click',click,true);};
+    },[camera,gl,invalidate,place,size]);
     return null;
 }
 function Stage({ place, selected, reduced, quality, onReady, onSettled, onSelect, memories, door, onDoor, onArrival }: Props) {
-    const { invalidate, scene } = useThree();
+    const { invalidate, scene, size } = useThree();
     const base = roomById(place);
     const room = base?exhibition(base,memories):undefined;
     const sun = useRef<THREE.DirectionalLight>(null);
@@ -67,7 +87,7 @@ function Stage({ place, selected, reduced, quality, onReady, onSettled, onSelect
  <pointLight position={[0, 6, -6]} intensity={90} distance={24} decay={2} color={room?.light ?? '#fff1ce'}/>
  <pointLight position={[-5, 5, -17]} intensity={65} distance={20} decay={2} color={room?.light ?? '#ffebc6'}/>
  <pointLight position={[5, 5, -16]} intensity={65} distance={20} decay={2} color={room?.light ?? '#ffebc6'}/>
- {room ? <Gallery room={room} selected={selected} onSelect={onSelect}/> : <><Exterior /><Hall />{place==='hall'&&<Doorways target={door} onDoor={onDoor} reduced={reduced}/>}</>}
+ {room ? <Gallery room={room} selected={selected} onSelect={onSelect}/> : <>{(place==="entrance" || size.width/size.height>=.85) && <Exterior />}<Hall />{place==='hall'&&<Doorways target={door} onDoor={onDoor} reduced={reduced}/>}</>}
  <DoorJourney target={door} reduced={reduced} onArrival={onArrival}/>
  <CameraRig place={place} selected={selected} reduced={reduced} onSettled={onSettled}/>
  </>;
