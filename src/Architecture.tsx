@@ -61,7 +61,7 @@ export const Exterior = memo(function Exterior() {
  {[0, 1, 2, 3].map(i => <Box key={i} p={[0, -.48 + i * .16, 8.5 - i * .6]} s={[20 - i * .5, .2, 5 - i * .8]} c={i % 2 ? '#d9d1c1' : '#c9c1b0'} texture/>)}
  {[-1, 1].map(side => <group key={side}><Box p={[side * 9, 5, 4.5]} s={[10, 10, 1.5]} texture/>{Array.from({ length: 13 }, (_, i) => <Box key={i} p={[side * 9, .4 + i * .73, 5.28]} s={[10, .022, .025]} c="#b8ad97"/>)}{[6.2, 10.5, 13].map(x => <group key={x}><Box p={[side * x, 4.1, 5.4]} s={[1.15, 7.4, .48]} texture/><Box p={[side * x, 7.95, 5.5]} s={[1.65, .35, .8]} texture/></group>)}<Box p={[side * 3.2, 2.75, 4.5]} s={[1.8, 5.5, 1.5]} texture/>{[3.6, 5.05].map(x => <Column key={x} x={side * x} z={6.05}/>)}<Box p={[side * 8.5, .4, 5.5]} s={[9, .8, 1.2]} texture/></group>)}
  <Spandrel /><AtelierModel name="limestone-portal" position={[0,-.27,5.69]} scale={[1.42,1.49,1.1]}/>
- <Box p={[0, 8.5, 5.5]} s={[11.8, .22, 1.05]} texture/><Box p={[0, 9.15, 5]} s={[28, 1.08, 1.3]} texture/>
+ <AtelierModel name="cornice-course" position={[0,8.4,5.5]} scale={[2.95,1.15,1.6]}/><Box p={[0, 9.15, 5]} s={[28, 1.08, 1.3]} texture/>
  <mesh position={[0, 9.13, 5.67]}><planeGeometry args={[7.9, .97]}/><meshBasicMaterial transparent map={inscriptionTexture('M U S E U M   O F   D A Y S')}/></mesh>
  {[9.78, 10.05, 10.25].map((y, i) => <Box key={y} p={[0, y, 5.2]} s={[28 + i * .3, .17, 1.8 + i * .15]} texture/>)}
  {Array.from({ length: 61 }, (_, i) => <Box key={i} p={[-13.8 + i * .46, 9.7, 5.9]} s={[.19, .27, .28]} texture/>)}
@@ -85,7 +85,7 @@ function FrameArt({ p, width = 2, height = 2.5, room = 'glow', seed = 11, frame 
     memory?: Memory; empty?: boolean;
 }) {
     return <group position={p}>
- <AtelierModel name={room==="glow"?"sunlit-rebate":"gallery-molding"} finish={room==="glow"?undefined:room} scale={[width/1.95,height/2.45,1]}/><Box p={[0, 0, 0]} s={[width+.08,height+.08,.10]} c={frame}/><Box p={[0, 0, .085]} s={[width + .1, height + .1, .04]} c="#e7dfca"/>
+ <AtelierModel name={empty?(room==="glow"?"sunlit-rebate":`${room}-rebate`):"gallery-molding"} scale={[width/1.95,height/2.45,1]}/><Box p={[0, 0, 0]} s={[width+.08,height+.08,.10]} c={frame}/><Box p={[0, 0, .085]} s={[width + .1, height + .1, .04]} c="#e7dfca"/>
  {empty ? <MemorySurface memory={memory} onClick={onClick!}/> : <mesh position={[0, 0, .12]} onClick={onClick} onPointerOver={onClick ? () => { document.body.style.cursor = 'pointer'; } : undefined} onPointerOut={onClick ? () => { document.body.style.cursor = ''; } : undefined}><planeGeometry args={[width, height]}/><meshStandardMaterial map={paintingTexture(room, seed)} roughness={1}/></mesh>}
  <Box p={[width * .32, -height / 2 - .4, .06]} s={[.52, .19, .03]} c="#e6e0d0"/>
  <Box p={[0, height / 2 + .34, .28]} s={[width * .65, .045, .22]} c={brass} metal={.6}/>
@@ -99,7 +99,7 @@ export const Hall = memo(function Hall() {
  <Box p={[-11, 5.6, -10]} s={[.6, 11.2, 31]} texture/><Box p={[11, 5.6, -10]} s={[.6, 11.2, 31]} texture/><Box p={[0, 5.6, -25]} s={[22, 11.2, .6]} texture/>
  {[1, -7, -15, -23].map(z => <group key={z}><Arch width={12} spring={4.9} thickness={.45} depth={.55} p={[0, 0, z]} c="#c9bca5"/>{[-1, 1].map(s => <Column key={s} x={s * 6} z={z + .4} h={5.2} r={.35}/>)}</group>)}
  <Box p={[0, 11.2, -10]} s={[22, .25, 31]} c="#c6bca6"/>{[-3, -11, -19].map(z => <group key={z}><Box p={[0, 11.02, z]} s={[5, .15, 4]} c="#e5e2d5"/><mesh position={[0, 10.91, z]} rotation-x={Math.PI / 2}><planeGeometry args={[4.3, 3.3]}/><meshBasicMaterial color="#fff4d6"/></mesh></group>)}
- <FrameArt p={[0, 4.2, -24.62]} width={3.5} height={4.4} room="glow" seed={24}/>
+ <AtelierModel name="cornice-course" position={[0,7.3,-24.4]} scale={[5.45,1.4,1.1]}/><FrameArt p={[0, 4.2, -24.62]} width={3.5} height={4.4} room="glow" seed={24}/>
  {[-1, 1].flatMap(s => [-5, -14].map((z, i) => <group key={`${s}-${z}`} position={[s * 9.7, 0, z]} rotation-y={s * -Math.PI / 2}><Arch width={3.8} spring={3.8} thickness={.25} depth={.3}/><Box p={[0, 2.6, -.1]} s={[3.7, 5.2, .1]} c={['#999f8a', '#785052'][i]}/><FrameArt p={[0, 2.7, .07]} width={1.7} height={2.2} room={s === -1 ? 'hush' : 'echo'} seed={42 + i}/></group>))}
  <Sculpture />{[-1, 1].map(s => <group key={s}><Box p={[s * 4.5, .65, -8.3]} s={[2.7, .22, 1]} c="#78634c"/><Box p={[s * 4.5, .32, -8.3]} s={[2.1, .6, .65]} c="#a79b84"/></group>)}
  </group>;
