@@ -5,9 +5,9 @@ const App=lazy(()=>import('./App'));
 export function AccountRoot(){
  const [owner,setOwner]=useState<string|null|undefined>(client?undefined:null);
  const [demo,setDemo]=useState(()=>sessionStorage.getItem("museum-demo")==="yes");
- const [recover,setRecover]=useState(false);
+ const [recover,setRecover]=useState(false); const [welcome,setWelcome]=useState(false);
  useEffect(()=>{if(!client)return;const {data}=client.auth.onAuthStateChange((event,session)=>{
- if(event==='SIGNED_OUT'||session){sessionStorage.removeItem('museum-demo');setDemo(false)}
+ if(event==='SIGNED_OUT')setWelcome(false); if(session){if(sessionStorage.getItem('museum-email-flow'))setWelcome(true);sessionStorage.removeItem('museum-email-flow');sessionStorage.removeItem('museum-confirm');} if(event==='SIGNED_OUT'||session){sessionStorage.removeItem('museum-demo');setDemo(false)}
  if(event==='SIGNED_IN'&&sessionStorage.getItem('museum-login')==='yes'){
    sessionStorage.removeItem('museum-login');sessionStorage.removeItem('museum-create');history.replaceState(null,'',location.pathname);
  }
@@ -17,32 +17,65 @@ export function AccountRoot(){
  useEffect(()=>{if(owner)void client!.from('profiles').upsert({user_id:owner},{onConflict:'user_id',ignoreDuplicates:true}).then(({error})=>{if(error)console.error('Profile initialization failed',error.code)})},[owner]);
  if(owner===undefined)return <p>Opening your museumâ€¦</p>;
  if(recover||(!owner&&!demo))return <main className="admission"><div className="admission-cover"><img width="52" height="52" src="/favicon.svg" alt=""/><h1>Museum <br/>of Days</h1><p>Every day deserves to be remembered.</p></div><div className="admission-form"><Account recovery={recover} done={()=>setRecover(false)}/>{!recover&&<button className="demo-entry" onClick={()=>{sessionStorage.setItem('museum-demo','yes');setDemo(true)}}>Explore Demo</button>}</div></main>;
- return <Suspense fallback={<p>Opening the museum…</p>}><App key={owner??'guest'} owner={owner}/></Suspense>;
+ return <Suspense fallback={<p>Opening the museumï¿½</p>}><>{owner&&welcome&&<div className="auth-welcome" role="status">Your account is ready. You are signed in. <button onClick={()=>setWelcome(false)} aria-label="Dismiss">Ã—</button></div>}<App key={owner??'guest'} owner={owner}/></></Suspense>;
 }
 
 export function Account({recovery=false,done}:{recovery?:boolean;done?:()=>void}){
- const [mode,setMode]=useState<'login'|'signup'|'reset'>('login');
- const [message,setMessage]=useState(''),[busy,setBusy]=useState(false);
+ const [pending,setPending]=useState(()=>sessionStorage.getItem('museum-confirm')||'');
+ const [email,setEmail]=useState(pending);
+ const [mode,setMode]=useState<'login'|'signup'|'reset'>(pending?'signup':'login');
+ const [message,setMessage]=useState(pending?'Open the confirmation link in your inbox to enter the museum.':'');
+ const [busy,setBusy]=useState(false);
+ const [until,setUntil]=useState(()=>Number(sessionStorage.getItem('museum-email-retry'))||0);
+ const [now,setNow]=useState(Date.now);
+ const remaining=Math.max(0,Math.ceil((until-now)/1000));
+ useEffect(()=>{if(until<=Date.now())return;const id=setInterval(()=>{setNow(Date.now());if(Date.now()>=until)clearInterval(id)},1000);return()=>clearInterval(id)},[until]);
  if(!client)return <p>Cloud accounts are unavailable in this build.</p>;
- const auth=client.auth;
- const redirect=location.origin+location.pathname;
- async function submit(form:HTMLFormElement){
+ const auth=client.auth,redirect=location.origin+location.pathname;
+ const address=email.trim(),waiting=!!pending&&pending===address;
+ function remember(){sessionStorage.setItem('museum-confirm',address);setPending(address)}
+ function cooldown(seconds=60){const end=Date.now()+seconds*1000;sessionStorage.setItem('museum-email-retry',String(end));setUntil(end);setNow(Date.now())}
+ async function submit(form:HTMLFormElement,resend=false){
+ if(busy)return;
+ if(!recovery&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)){setMessage('Enter a valid email address.');return}
+ const password=String(new FormData(form).get('password')??'');
+ if(!resend&&(recovery||mode!=='reset')&&password.length<(recovery||mode==='signup'?8:1)){setMessage(recovery||mode==='signup'?'Choose a password with at least eight characters.':'Enter your password.');return}
  setBusy(true);setMessage('');
- const fields=new FormData(form), email=String(fields.get('email')??'').trim(),password=String(fields.get('password')??'');
  try{
- if(!recovery&&mode!=='reset')sessionStorage.setItem('museum-login','yes');
- const {error}=recovery?await auth.updateUser({password}):mode==='reset'?await auth.resetPasswordForEmail(email,{redirectTo:redirect}):mode==='signup'?await auth.signUp({email,password,options:{emailRedirectTo:redirect}}):await auth.signInWithPassword({email,password});
- if(error)throw error;
- if(recovery)done?.();else setMessage(mode==='login'?'Signed in.':'Check your email to continue.');
- }catch(e){setMessage(e instanceof Error?e.message:'Request failed. Try again.')}finally{setBusy(false)}
+ if(resend){const {error}=await auth.resend({type:'signup',email:address,options:{emailRedirectTo:redirect}});if(error)throw error;cooldown();setMessage('Confirmation requested. Check your inbox and spam folder for the latest link.')}
+ else if(recovery){const {error}=await auth.updateUser({password});if(error)throw error;done?.()}
+ else if(mode==='reset'){const {error}=await auth.resetPasswordForEmail(address,{redirectTo:redirect});if(error)throw error;setMessage('If this email has an account, check your inbox for the reset link.')}
+ else{
+ sessionStorage.setItem('museum-email-flow','yes');sessionStorage.setItem('museum-login','yes');
+ if(mode==='signup'){const {data,error}=await auth.signUp({email:address,password,options:{emailRedirectTo:redirect}});if(error)throw error;
+ if(data.session)setMessage('Your account is ready. You are signed in.');
+ else{remember();cooldown();setMessage('Open the confirmation link in your inbox to enter the museum. Check spam too. Already registered? Sign in.')}}
+ else{const {error}=await auth.signInWithPassword({email:address,password});if(error)throw error;setMessage('You are signed in.')}
  }
+ }catch(error){sessionStorage.removeItem('museum-email-flow');
+ const e=error as {code?:string;message?:string;status?:number;name?:string};
+ if(e.code==='email_not_confirmed')remember();
+ const messages:Record<string,string>={
+ user_already_exists:'This email is already registered. Sign in or reset your password.',
+ email_exists:'This email is already registered. Sign in or reset your password.',
+ email_not_confirmed:'Confirm your email before signing in. Check your inbox and spam folder or request another link.',
+ invalid_credentials:'Incorrect email or password. Try again or reset your password.',
+ email_address_not_authorized:'The museum mail service cannot send confirmation to this address. Contact the museum team.',
+ email_provider_disabled:'Email accounts are currently unavailable.',signup_disabled:'Registration is currently unavailable.',
+ weak_password:'Choose a stronger password.',email_address_invalid:'Enter a valid email address.'};
+ if(e.status===429){cooldown(Math.max(60,Number(e.message?.match(/(\d+) seconds/i)?.[1])||0));if(mode==='signup')remember();setMessage('Too many requests. Check your inbox for the previous link and wait before requesting another.')}
+ else setMessage(messages[e.code??'']||(/sending.*email|smtp/i.test(e.message??'')?'The confirmation email could not be sent. Contact the museum team about email delivery.':/fetch|network|timeout/i.test((e.name??'')+' '+e.message)?'Could not reach the museum. Check your connection and try again.':e.message||'Please try again.'));
+ }finally{setBusy(false)}
+ }
+ const confirming=waiting&&mode==='signup'&&!recovery;
  return <section className="account-card"><h2>{recovery?'Choose a new password':mode==='reset'?'Reset your password':mode==='signup'?'Create your museum account':'Welcome to the museum'}</h2>
- {!recovery&&<div className="account-tabs">{(['login','signup'] as const).map((m,i)=><button key={m} aria-pressed={mode===m} onClick={()=>{setMode(m);setMessage('')}}>{['Sign In','Sign Up'][i]}</button>)}</div>}
- <form onSubmit={e=>{e.preventDefault();void submit(e.currentTarget)}}>
- {!recovery&&<label>Email<input type="email" required name="email" autoComplete="email"/></label>}
- {(recovery||mode!=='reset')&&<label>Password<input type="password" required name="password" minLength={mode==='signup'||recovery?8:1} autoComplete={mode==='login'&&!recovery?'current-password':'new-password'}/></label>}
- <button className="solid-button" disabled={busy}>{busy?'Please wait…':recovery?'Save password':mode==='reset'?'Send recovery email':'Continue with Email'}</button></form>
- {!recovery&&<><button className="demo-entry" onClick={()=>{setMode('reset');setMessage('')}}>Forgot Password?</button><div className="account-rule">OR</div><button className="google-entry" onClick={async()=>{sessionStorage.setItem('museum-login','yes');try{if(!await googleEnabled()){setMessage('Google sign-in is currently unavailable. Continue with email or explore the demo.');return}const {error}=await auth.signInWithOAuth({provider:'google',options:{redirectTo:redirect}});if(error)throw error}catch(e){setMessage(e instanceof Error?e.message:'Google sign-in could not start.')}}}><GoogleMark/>Continue with Google</button></>}
- <p role="status">{message}</p></section>
-}
+ {!recovery&&<div className="account-tabs">{(['login','signup'] as const).map((m,i)=><button key={m} disabled={busy} aria-pressed={mode===m} onClick={()=>{setMode(m);setMessage('')}}>{['Sign In','Sign Up'][i]}</button>)}</div>}
+ <form noValidate onSubmit={e=>{e.preventDefault();if(!(mode==='signup'&&remaining&&!recovery))void submit(e.currentTarget,confirming)}}>
+ {!recovery&&<label>Email<input type="email" required name="email" autoComplete="email" maxLength={254} disabled={busy} value={email} onChange={e=>{setEmail(e.target.value);setMessage('')}}/></label>}
+ {(recovery||mode!=='reset'&&!confirming)&&<label>Password<input type="password" required name="password" autoComplete={mode==='login'&&!recovery?'current-password':'new-password'}/></label>}
+ <button className="solid-button" disabled={busy||mode==='signup'&&!recovery&&remaining>0}>{busy?'Please waitâ€¦':recovery?'Save password':mode==='reset'?'Send recovery email':mode==='signup'&&remaining?'Try again in '+remaining+'s':confirming?'Resend confirmation email':mode==='signup'?'Create account':'Continue with Email'}</button>
+ <p role="status">{message}</p>
+ {waiting&&mode==='login'&&!recovery&&<button type="button" disabled={busy||remaining>0} onClick={e=>void submit(e.currentTarget.form!,true)}>{remaining?'Resend in '+remaining+'s':'Resend confirmation email'}</button>}</form>
+ {!recovery&&<><button className="demo-entry" disabled={busy} onClick={()=>{setMode('reset');setMessage('')}}>Forgot Password?</button><div className="account-rule">OR</div><button className="google-entry" onClick={async()=>{sessionStorage.setItem('museum-login','yes');try{if(!await googleEnabled()){setMessage('Google sign-in is currently unavailable. Continue with email or explore the demo.');return}const {error}=await auth.signInWithOAuth({provider:'google',options:{redirectTo:redirect}});if(error)throw error}catch(e){setMessage(e instanceof Error?e.message:'Google sign-in could not start.')}}}><GoogleMark/>Continue with Google</button></>}
+ </section>}
 function GoogleMark(){return <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.8 6.1-15z"/><path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5.1c-1.8 1.2-4.1 1.9-6.9 1.9-5.3 0-9.9-3.6-11.5-8.4H5.7v5.3A20 20 0 0 0 24 44z"/><path fill="#FBBC05" d="M12.5 27.5a12 12 0 0 1 0-7V15H5.7a20 20 0 0 0 0 18z"/><path fill="#EA4335" d="M24 12.1c3 0 5.6 1 7.7 3l5.8-5.7A19.5 19.5 0 0 0 24 4 20 20 0 0 0 5.7 15l6.8 5.5c1.6-4.9 6.2-8.4 11.5-8.4z"/></svg>}

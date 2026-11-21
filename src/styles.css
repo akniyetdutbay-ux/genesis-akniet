@@ -82,3 +82,4 @@
 .living-memory.layout-sequence .memory-image{border-bottom:clamp(12px,2.5vw,36px) solid var(--mount-paper)}
 @media(min-width:701px){.living-memory.layout-pair .companion-print{width:19vw;left:34vw;bottom:16%;transform:rotate(3deg)}.living-memory.layout-folio .memory-story{border-left:1px solid var(--memory-color);border-top:0;padding-left:2rem}}
 .photo-previews figcaption{font:500 12px 'DM Sans',sans-serif;margin-top:4px}.photo-previews figure button{display:block;padding:5px 0;text-decoration:underline;text-underline-offset:3px}
+.auth-welcome{position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:1000;background:#eee7d6;color:#302e26;padding:.65rem 1rem;box-shadow:0 3px 16px #0002}.auth-welcome button{margin-left:.5rem}.account-card form [role=status]:empty{display:none}.account-card form [role=status]{margin:.65rem 0;line-height:1.45}
