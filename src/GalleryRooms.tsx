@@ -15,8 +15,8 @@ export interface RoomStyle { wallKind: StoneKind; wall: string; floorKind: Stone
 export const roomStyle: Record<RoomId, RoomStyle> = {
     glow: { wallKind: 'limestone', wall: '#dcc39c', floorKind: 'floor', floor: '#d6c4a3', ceiling: '#efe3cb', arch: '#efe1c6', partition: '#e3cca6', partitionKind: 'limestone', frame: '#b08a4c', plinth: '#c4a983' },
     hush: { wallKind: 'plaster', wall: '#a5b2a3', floorKind: 'travertine', floor: '#bcc0b4', ceiling: '#d6dbd0', arch: '#c2cabd', partition: '#adb9aa', partitionKind: 'plaster', frame: '#b7bdae', plinth: '#c8ccc0' },
-    echo: { wallKind: 'ashlar', wall: '#7e8d9c', floorKind: 'floor', floor: '#8d949a', ceiling: '#6c7783', arch: '#a2aebb', partition: '#8292a3', partitionKind: 'limestone', frame: '#6f634f', plinth: '#4f4a45' },
-    pulse: { wallKind: 'plaster', wall: '#5a242b', floorKind: 'floor', floor: '#45403f', ceiling: '#2c2324', arch: '#8b5a4e', partition: '#5a252b', partitionKind: 'plaster', frame: '#b8955a', plinth: '#2c2728' },
+    echo: { wallKind: 'ashlar', wall: '#7e8d9c', floorKind: 'floor', floor: '#767d84', ceiling: '#6c7783', arch: '#a2aebb', partition: '#8494a5', partitionKind: 'plaster', frame: '#6f634f', plinth: '#4f4a45' },
+    pulse: { wallKind: 'plaster', wall: '#5a242b', floorKind: 'floor', floor: '#45403f', ceiling: '#2c2324', arch: '#8b5a4e', partition: '#4c2026', partitionKind: 'plaster', frame: '#b8955a', plinth: '#2c2728' },
 };
 
 function Block({ p, s, kind, c, rough, rot = 0, shadow = true }: { p: V3; s: V3; kind?: StoneKind; c: string; rough?: number; rot?: number; shadow?: boolean }) {
