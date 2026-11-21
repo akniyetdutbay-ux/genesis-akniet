@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 export interface Track { id:string; title:string; artist:string; url:string }
 
-export function MusicSearch({onSelect}:{onSelect:(track:Track)=>void}) {
+export function MusicSearch({selected,onSelect}:{selected?:Track;onSelect:(track:Track)=>void}) {
   const [query,setQuery]=useState('');
   const [tracks,setTracks]=useState<Track[]>([]);
   const [status,setStatus]=useState('');
@@ -27,5 +27,5 @@ export function MusicSearch({onSelect}:{onSelect:(track:Track)=>void}) {
       setTracks(found);setStatus(found.length?'Choose a recording.':'No recordings found.');
     } catch {if(!controller.signal.aborted)setStatus('Search unavailable. You can paste a music link below.')}
   }
-  return <fieldset><legend>Find a recording</legend><label>Song or artist<input value={query} onChange={e=>{request.current?.abort();setQuery(e.target.value);setTracks([]);setStatus('')}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();if(query.trim().length>=2)void search()}}}/></label><button type="button" disabled={query.trim().length<2} onClick={()=>void search()}>Search music</button><p role="status">{status}</p>{tracks.map(t=><button type="button" key={t.id} onClick={()=>{onSelect(t);setStatus(t.title+' · '+t.artist);setTracks([])}}>{t.title} · {t.artist}</button>)}</fieldset>
+  return <fieldset><legend>Find a recording</legend><label>Song or artist<input value={query} onChange={e=>{request.current?.abort();setQuery(e.target.value);setTracks([]);setStatus('')}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();if(query.trim().length>=2)void search()}}}/></label><button type="button" disabled={query.trim().length<2} onClick={()=>void search()}>Search music</button><p role="status">{status || (selected ? selected.title+' · '+selected.artist : '')}</p>{tracks.map(t=><button type="button" key={t.id} onClick={()=>{onSelect(t);setStatus('');setTracks([])}}>{t.title} · {t.artist}</button>)}</fieldset>
 }
