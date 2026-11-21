@@ -6,8 +6,27 @@ export interface Memory {demoEdition?:number;sources?:string[];clip?:OpeningClip
 export { interpret } from './artDirection';
 function database():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const request=indexedDB.open('museum-of-days',2);request.onupgradeneeded=()=>{for(const store of ['memories','meta'])if(!request.result.objectStoreNames.contains(store))request.result.createObjectStore(store,{keyPath:'id'})};request.onsuccess=()=>{request.result.onversionchange=()=>request.result.close();resolve(request.result)};request.onerror=()=>reject(request.error);request.onblocked=()=>reject(new Error('Close other museum tabs and try again.'))})}
 function complete(tx:IDBTransaction,db:IDBDatabase):Promise<void>{return new Promise((resolve,reject)=>{tx.oncomplete=()=>{db.close();resolve()};tx.onabort=()=>{db.close();reject(tx.error??new Error('Local storage transaction failed.'))}})}
-export async function readMemories():Promise<Memory[]>{const db=await database();return new Promise((resolve,reject)=>{const tx=db.transaction('memories');const req=tx.objectStore('memories').getAll();let result:Memory[]=[];req.onsuccess=()=>{result=req.result};tx.oncomplete=()=>{db.close();resolve(result)};tx.onabort=()=>{db.close();reject(tx.error)}})}
-export async function saveMemory(memory:Memory){const db=await database();const tx=db.transaction('memories','readwrite');const done=complete(tx,db);tx.objectStore('memories').put(memory);return done}
+type LocalFile = {bytes:ArrayBuffer;type:string};
+type LocalRecord = Omit<Memory,'photos'|'audio'|'clip'> & {
+ photos:(Blob|LocalFile)[];audio?:Blob|LocalFile;clip?:{kind:'video';file:Blob|LocalFile};
+};
+async function encodeFile(blob:Blob):Promise<LocalFile>{
+ return {bytes:await blob.arrayBuffer(),type:blob.type};
+}
+function decodeFile(file:Blob|LocalFile):Blob{
+ return file instanceof Blob?file:new Blob([file.bytes],{type:file.type});
+}
+async function encodeRecord(memory:Memory):Promise<LocalRecord>{
+ return {...memory,photos:await Promise.all(memory.photos.map(encodeFile)),
+  audio:memory.audio&&await encodeFile(memory.audio),
+  clip:memory.clip&&{kind:'video',file:await encodeFile(memory.clip.file)}};
+}
+function decodeRecord(record:LocalRecord):Memory{
+ return {...record,photos:record.photos.map(decodeFile),audio:record.audio&&decodeFile(record.audio),
+  clip:record.clip&&{kind:'video',file:decodeFile(record.clip.file)}};
+}
+export async function readMemories():Promise<Memory[]>{const db=await database();return new Promise((resolve,reject)=>{const tx=db.transaction('memories');const req=tx.objectStore('memories').getAll();let result:Memory[]=[];req.onsuccess=()=>{result=(req.result as LocalRecord[]).map(decodeRecord)};tx.oncomplete=()=>{db.close();resolve(result)};tx.onabort=()=>{db.close();reject(tx.error)}})}
+export async function saveMemory(memory:Memory){const record=await encodeRecord(memory);const db=await database();const tx=db.transaction('memories','readwrite');const done=complete(tx,db);tx.objectStore('memories').put(record);return done}
 export async function initializeDemo(force=false){
  const db=await database();
  const initialized=await new Promise<boolean>((resolve,reject)=>{const tx=db.transaction('meta');const req=tx.objectStore('meta').get('demo-initialized');req.onsuccess=()=>resolve(!!req.result);req.onerror=()=>reject(req.error)});db.close();
@@ -16,19 +35,19 @@ export async function initializeDemo(force=false){
  const old=await new Promise<Memory|undefined>((resolve,reject)=>{const req=lookup.transaction('memories').objectStore('memories').get(id);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
  lookup.close();
  if(old?.kind!=='demo'||old.demoEdition===2)return;
- const {lakeMemory}=await import('./demo');const sample=await lakeMemory();
+ const {lakeMemory}=await import('./demo');const sample=await encodeRecord(await lakeMemory());
  const target=await database(),tx=target.transaction('memories','readwrite'),done=complete(tx,target);
  const store=tx.objectStore('memories'),req=store.get(id);
  req.onsuccess=()=>{if(req.result?.kind==='demo'&&!req.result.demoEdition)store.put({...sample,slot:req.result.slot})};
  return done;
  }
- const {sampleMemories}=await import('./demo');const samples=await sampleMemories();
+ const {sampleMemories}=await import('./demo');const samples=await Promise.all((await sampleMemories()).map(encodeRecord));
  const target=await database();const tx=target.transaction(['memories','meta'],'readwrite');const done=complete(tx,target);
  // Recheck inside the write transaction: safe against concurrent first visits and reset.
  const flag=tx.objectStore('meta').get('demo-initialized');flag.onsuccess=()=>{
   if(flag.result&&!force)return;
   const store=tx.objectStore('memories');const existing=store.getAll();existing.onsuccess=()=>{
-   const records=existing.result as Memory[];
+   const records=existing.result as LocalRecord[];
    for(const sample of samples){if(records.some(m=>m.id===sample.id))continue;while(records.some(m=>m.room===sample.room&&m.slot===sample.slot))sample.slot++;store.put(sample);records.push(sample)}
    tx.objectStore('meta').put({id:'demo-initialized',value:true});
   };
