@@ -1,3 +1,4 @@
+import {sourceOf,mediaElement} from './soundtrack';
 import {Account} from './Account';
 import {client,hydrate,prepareOpening,removeCloud,saveCloud} from './cloud';
 import { VisitorGuide } from './VisitorGuide';
@@ -106,7 +107,7 @@ export default function App({owner}:{owner:string|null}) {
 
     const [notice,setNotice]=useState('');
     const ticket=useRef(0);
-    const soundtrack=useRef<HTMLAudioElement|null>(null);
+    const soundtrack=useRef<HTMLMediaElement|null>(null);
     const soundBlob=useRef('');
     const stopStory=useCallback(()=>{
       ticket.current++;const a=soundtrack.current;if(a){a.pause();a.removeAttribute('src');a.load()}
@@ -169,11 +170,17 @@ export default function App({owner}:{owner:string|null}) {
     const onSelect = useCallback((i:number)=>{if(!loaded||busy)return;setSelected(i);const memory=memories.find(m=>m.room===place&&m.slot===i);if(memory){
       stopStory();const request=ticket.current;
       void setAmbience(false);setSound(false);setNotice('Opening memory…');
-      const audio=memory.audio?URL.createObjectURL(memory.audio):memory.media?.expires&&memory.media.expires>Date.now()?memory.media.audioUrl:undefined;
-      if(audio){if(memory.audio)soundBlob.current=audio;const a=new Audio(audio);soundtrack.current=a;void a.play().catch(()=>{});}
+      const source=sourceOf(memory);
+      function start(url:string){
+        const player=mediaElement(source?.type==='video_upload');
+        soundtrack.current=player;player.src=url;
+        void player.play().catch((error:Error)=>{player.dataset.playError=error.name;player.dispatchEvent(new Event('soundtrackfailure'))});
+      }
+      const audio=source?.type==='audio_url'?source.url:memory.audio?URL.createObjectURL(memory.audio):memory.media?.expires&&memory.media.expires>Date.now()?memory.media.audioUrl:undefined;
+      if(audio&&source?.type!=='platform_link'){if(memory.audio)soundBlob.current=audio;start(audio)}
       Promise.all([prepareOpening(memory),new Promise(resolve=>setTimeout(resolve,reduced?0:1100))]).then(([full])=>{
         if(ticket.current!==request)return;
-        if(!soundtrack.current&&full.audio){soundBlob.current=URL.createObjectURL(full.audio);soundtrack.current=new Audio(soundBlob.current);void soundtrack.current.play().catch(()=>{});}
+        if(!soundtrack.current&&full.audio){soundBlob.current=URL.createObjectURL(full.audio);start(soundBlob.current);}
         setNotice('');setViewer(full);
       }).catch(()=>{if(ticket.current===request){stopStory();setNotice('Could not open this memory. Select the frame to retry.')}});
     }else {if(!owner)sessionStorage.setItem("museum-create",JSON.stringify({room:place,slot:i}));setEditor(i)}},[loaded,busy,memories,place,reduced,owner,stopStory]);

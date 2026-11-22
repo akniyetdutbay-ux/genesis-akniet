@@ -19,3 +19,5 @@
 .sound-desk .song-link-only{font-size:11px;color:#e8c798;white-space:normal}
 .sound-desk .audio-problem{font-size:11px;color:#f3b0a2;white-space:normal}
 @media(max-width:700px){.sound-desk .song-link-only,.sound-desk .audio-problem{font-size:10px}.sound-desk{max-width:56vw;gap:4px}}
+
+.soundtrack-field{display:grid;gap:.8rem;border:1px solid #947e5b;padding:1rem}.sound-desk input[type=range]{width:clamp(3rem,9vw,7rem);accent-color:#ddba82}.platform-player{display:block;width:min(100%,480px);height:clamp(200px,30vh,280px);margin:8px auto 0;border:0}.theatre:has(.platform-player){overflow:auto}

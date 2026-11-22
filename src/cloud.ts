@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 import { createClient } from '@supabase/supabase-js';
+import {audioTypes,videoTypes} from './soundtrack';
 import type { Memory } from './memories';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
@@ -47,7 +48,7 @@ export async function saveCloud(memory:Memory, owner:string, replacing=false, ph
   let submitted=false;
   try {
     if(memory.photos.some(p=>!['image/jpeg','image/png','image/webp'].includes(p.type)||p.size>25*1024*1024))throw Error('Use JPEG, PNG or WebP photographs up to 25 MB.');
-    if(memory.audio&&!['audio/mpeg','audio/mp4','audio/ogg','audio/wav','audio/webm'].includes(memory.audio.type))throw Error('Unsupported audio format.');
+    if(memory.audio&&![...audioTypes,...videoTypes].includes(memory.audio.type))throw Error('Unsupported audio format.');
     if(!memory.photos.length)throw Error('Choose a photograph before saving.');
     const cover=await createImageBitmap(memory.photos[0]);
     const canvas=document.createElement('canvas');
@@ -64,7 +65,7 @@ export async function saveCloud(memory:Memory, owner:string, replacing=false, ph
     const {id,date,title,diary,room,slot,visual}=memory;
     phase?.('Saving your memory...');
     submitted=true;
-    const {error}=await client!.rpc('store_day',{day:{id,date,title,diary,room,slot,visual:{...visual,previewPath},visibility:'private'},pictures,music:{url:memory.musicUrl,path,title:memory.track?.title,artist:memory.track?.artist,track_id:memory.track?.id}});
+    const {error}=await client!.rpc('store_day',{day:{id,date,title,diary,room,slot,visual:{...visual,previewPath,soundtrack:memory.soundtrack??null},visibility:'private'},pictures,music:{url:memory.musicUrl,path,title:memory.track?.title,artist:memory.track?.artist,track_id:memory.track?.id}});
     if(error){
       if(error.code && /^([0-9A-Z]{5}|PGRST\d+)$/.test(error.code)){submitted=false;throw error}
       // A lost HTTP response can follow a committed transaction. Its unique cover identifies this write.
@@ -92,7 +93,7 @@ export async function readCloud(owner:string):Promise<Memory[]> {
   const urls=new Map(signed?.data?.map(item=>[item.path,item.signedUrl]));
   return data.map(row=>{
     const pictures=row.memory_photos as {storage_path:string;display_order:number}[];
-    return {id:row.id,kind:'personal',date:row.memory_date,title:row.title,diary:row.diary_text,room:row.emotional_room,slot:row.slot,visual:row.visual_settings,createdAt:row.created_at,photos:[],media:{pictures:pictures.sort((a,b)=>a.display_order-b.display_order).map(p=>p.storage_path),audio:row.memory_music?.storage_path??undefined,audioUrl:urls.get(row.memory_music?.storage_path)??undefined,expires:Date.now()+1790000},track:row.memory_music?.provider_track_id?{id:row.memory_music.provider_track_id,title:row.memory_music.track_title,artist:row.memory_music.artist,url:row.memory_music.external_url}:undefined,musicUrl:row.memory_music?.external_url??'',cloud:true};
+    return {id:row.id,kind:'personal',date:row.memory_date,title:row.title,diary:row.diary_text,room:row.emotional_room,slot:row.slot,soundtrack:row.visual_settings?.soundtrack??undefined,visual:row.visual_settings,createdAt:row.created_at,photos:[],media:{pictures:pictures.sort((a,b)=>a.display_order-b.display_order).map(p=>p.storage_path),audio:row.memory_music?.storage_path??undefined,audioUrl:urls.get(row.memory_music?.storage_path)??undefined,expires:Date.now()+1790000},track:row.memory_music?.provider_track_id?{id:row.memory_music.provider_track_id,title:row.memory_music.track_title,artist:row.memory_music.artist,url:row.memory_music.external_url}:undefined,musicUrl:row.memory_music?.external_url??'',cloud:true};
   });
 }
 

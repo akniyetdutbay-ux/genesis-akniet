@@ -1,3 +1,4 @@
+import {platform,sourceOf,https} from './soundtrack';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import type {CSSProperties} from 'react';
 import {ArrowLeft,ArrowRight,Pause,Play,RotateCcw,Volume2,VolumeX,X} from 'lucide-react';
@@ -18,7 +19,10 @@ function usePrints(memory:Memory){
  },[memory.photos,memory.sources]);
  return memory.sources??local;
 }
-export function MemoryViewer({memory,reduced,soundtrack,onClose}:{memory:Memory;reduced:boolean;soundtrack:HTMLAudioElement|null;onClose:()=>void}){
+export function MemoryViewer({memory,reduced,soundtrack,onClose}:{memory:Memory;reduced:boolean;soundtrack:HTMLMediaElement|null;onClose:()=>void}){
+ const [muted,setMuted]=useState(false),[volume,setVolume]=useState(1),[embedded,showEmbed]=useState(false);
+ const source=sourceOf(memory),link=source?.type==='platform_link'?https(source.url??'')?.href:undefined;
+ const service=link?platform(link):undefined;
  const prints=usePrints(memory),count=prints.length;
  const [index,setIndex]=useState(0),[previous,setPrevious]=useState<number|null>(null);
  const [playing,setPlaying]=useState(true),[ended,setEnded]=useState(false),[serial,setSerial]=useState(0);
@@ -59,8 +63,10 @@ export function MemoryViewer({memory,reduced,soundtrack,onClose}:{memory:Memory;
    soundtrack.addEventListener('error',error);
    soundtrack.addEventListener('pause',paused);
    soundtrack.addEventListener('playing',playing);
-   if(soundtrack.error)error();else setQuiet(soundtrack.paused);
-   return()=>{soundtrack.removeEventListener('error',error);soundtrack.removeEventListener('pause',paused);soundtrack.removeEventListener('playing',playing)};
+   const failedStart=()=>{setQuiet(true);setAudioProblem(soundtrack.dataset.playError==='NotAllowedError'?'Tap Play soundtrack to enable audio.':'Sound could not start. Check media access and retry.')};
+   soundtrack.addEventListener('soundtrackfailure',failedStart);
+   if(soundtrack.error)error();else if(soundtrack.dataset.playError)failedStart();else setQuiet(soundtrack.paused);
+   return()=>{soundtrack.removeEventListener('soundtrackfailure',failedStart);soundtrack.removeEventListener('error',error);soundtrack.removeEventListener('pause',paused);soundtrack.removeEventListener('playing',playing)};
   },[soundtrack]);
  function startAudio(){
     if(!soundtrack)return;
@@ -77,7 +83,7 @@ export function MemoryViewer({memory,reduced,soundtrack,onClose}:{memory:Memory;
   if(soundtrack&&Number.isFinite(soundtrack.duration))soundtrack.currentTime=Math.min(next*seconds,Math.max(0,soundtrack.duration-.05));
  }
  function replay(){seek(0);setRead(false);setPlaying(true);startAudio()}
- function toggle(){if(ended){replay();return}setPlaying(!playing);if(playing)soundtrack?.pause();else if(!quiet)startAudio()}
+ function toggle(){if(ended){replay();return}setPlaying(!playing);if(playing)soundtrack?.pause();else startAudio()}
  function showDiary(){setPlaying(false);soundtrack?.pause();setRead(true)}
  const url=prints[index],portrait=(memory.visual.studies?.[index]?.ratio??ratio)<.9;
  const style={'--seconds':seconds+'s','--tint':memory.visual.studies?.[index]?.color??memory.visual.color,'--px':'0px','--py':'0px'} as CSSProperties;
@@ -96,7 +102,8 @@ export function MemoryViewer({memory,reduced,soundtrack,onClose}:{memory:Memory;
  <section className="theatre-notes"><div className="type-block"><span className="room-signature">{memory.room} <i/> {dateText}</span><h1>{memory.title}</h1></div><div className="diary-leaf"><p key={index+'-'+serial}>{captions[index]}</p><button onClick={showDiary}>Read diary</button></div></section>
  <footer className="theatre-foot"><div className="cue-strip" ref={progress}>{prints.map((_,i)=><button key={i} aria-label={'View photograph '+(i+1)} aria-current={i===index?'step':undefined} className={i<index?'passed':''} onClick={()=>seek(i)}><i/></button>)}</div>
  <div className="transport"><button aria-label="Previous photograph" disabled={!index} onClick={()=>seek(index-1)}><ArrowLeft/></button><button className="play-key" onClick={toggle} aria-label={playing?'Pause':'Play'}>{playing?<Pause/>:<Play/>}</button><button disabled={index+1>=count} aria-label="Next photograph" onClick={()=>seek(index+1)}><ArrowRight/></button><span>{String(index+1).padStart(2,'0')} / {String(count).padStart(2,'0')}</span><button aria-label="Replay" onClick={replay}><RotateCcw/></button>
- <div className="sound-desk">{soundtrack&&<button aria-label={quiet?'Play soundtrack':'Mute sound'} onClick={()=>{if(quiet){setPlaying(true);startAudio()}else{soundtrack.pause();setQuiet(true)}}}>{quiet?<VolumeX/>:<Volume2/>}{quiet?'Play soundtrack':'Sound on'}</button>}{audioProblem&&<span className="audio-problem" role="status">{audioProblem}</span>}{memory.musicUrl&&!soundtrack&&<span className="song-link-only">Song link only — open at source to listen</span>}{memory.musicUrl&&<a target="_blank" rel="noopener noreferrer" href={memory.musicUrl} title={memory.track?memory.track.title+' · '+memory.track.artist:'Listen at source'}>Open Song ↗</a>}</div></div>
- </footer>{read&&<section className="reading-room"><button onClick={()=>setRead(false)}>Back to memory</button><time>{dateText}</time><h2>{memory.title}</h2><p>{memory.diary}</p>{memory.track&&<p>{memory.track.title} · {memory.track.artist}</p>}</section>}
+ <div className="sound-desk">{soundtrack&&<>{quiet&&<button onClick={()=>{if(ended)replay();else{setPlaying(true);startAudio()}}}>Play soundtrack</button>}<button aria-label={muted?'Unmute sound':'Mute sound'} aria-pressed={muted} onClick={()=>{soundtrack.muted=!muted;setMuted(!muted)}}>{muted?<VolumeX/>:<Volume2/>}</button><input aria-label="Soundtrack volume" type="range" min="0" max="1" step=".05" value={volume} onChange={e=>{const v=Number(e.target.value);soundtrack.volume=v;setVolume(v)}}/></>}{audioProblem&&<span className="audio-problem" role="status">{audioProblem}</span>}
+ {link&&<>{service?.embed&&<button onClick={()=>showEmbed(!embedded)}>{embedded?'Close player':'Open '+service.provider+' player'}</button>}<a target="_blank" rel="noopener noreferrer" href={link}>Open song</a></>}</div></div>
+ {embedded&&service?.embed&&<iframe className="platform-player" src={service.embed} title={service.provider+' official player'} allow="encrypted-media; fullscreen; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin"/>}</footer>{read&&<section className="reading-room"><button onClick={()=>setRead(false)}>Back to memory</button><time>{dateText}</time><h2>{memory.title}</h2><p>{memory.diary}</p>{memory.track&&<p>{memory.track.title} · {memory.track.artist}</p>}</section>}
  </dialog>;
 }

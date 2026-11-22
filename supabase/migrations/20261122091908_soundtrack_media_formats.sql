@@ -1,0 +1,1 @@
+update storage.buckets set allowed_mime_types = array(select distinct mime from unnest(allowed_mime_types || array['video/mp4','video/quicktime','video/webm','audio/aac','audio/flac']) as mime order by mime) where id='memory-media' and allowed_mime_types is not null;
