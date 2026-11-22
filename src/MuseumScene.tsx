@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import gsap from 'gsap';
 import { Exterior, Hall, Gallery } from './Architecture';
 import { skyTexture } from './textures';
+import { LightRig } from './Lighting';
 import { exhibitionPosition, roomById, type Place } from './data';
 interface Props {
     memories: Memory[]; door:RoomId|null; onDoor:(id:RoomId)=>void; onArrival:()=>void;
@@ -26,9 +27,9 @@ function CameraRig({ place, selected, reduced, onSettled }: Pick<Props, 'place' 
         const mobile = size.width / size.height < .85;
         const isEntry = place === 'entrance';
         const room = roomById(place);
-        let pos = [0, isEntry ? 4.6 : 3.05, isEntry ? (mobile ? 25 : 20) : 1.7];
+        let pos = [0, isEntry ? 4.6 : 3.4, isEntry ? (mobile ? 25 : 20) : 1.7];
         if(mobile && place==='hall')pos[0]=roomById(previous.current)?doorX[previous.current as RoomId]:doorX.glow;
-        let target = [pos[0], isEntry ? (mobile ? 3.8 : 5.1) : 3.2, isEntry ? 4 : -15];
+        let target = [pos[0], isEntry ? (mobile ? 3.8 : 5.1) : 4.25, isEntry ? 4 : -15];
         if (room && selected !== null) {
             const p = exhibitionPosition(selected, room.id);
             pos = [p[0], 2.75, p[2] + (mobile ? 6.4 : 5.4)];
@@ -92,21 +93,9 @@ function Stage({ place, selected, reduced, quality, onReady, onSettled, onSelect
     const { invalidate, scene, size } = useThree();
     const base = roomById(place);
     const room = base?exhibition(base,memories):undefined;
-    const sun = useRef<THREE.DirectionalLight>(null);
     useEffect(() => { scene.background = skyTexture(); onReady(); invalidate(); }, [scene, onReady, invalidate]);
-    useEffect(() => { if (sun.current) {
-        sun.current.target.position.set(0, 0, -9);
-        sun.current.target.updateMatrixWorld();
-        invalidate();
-    } }, [place, invalidate]);
     return <>
- <fog attach="fog" args={[room?.wall ?? '#d7cbb5', room ? 22 : 38, room ? 48 : 90]}/>
- <ambientLight intensity={room?.id === 'echo' ? .52 : room?.id === 'hush' ? .88 : .74} color={room?.light ?? '#fff0d8'}/>
- <hemisphereLight args={['#d9e9f2', '#a5977b', 1.1]}/>
- <directionalLight ref={sun} position={[-9, 16, 10]} intensity={room?.id==='hush'?1.45:2.4} color={room?.id==='glow'?'#ffe3ac':room?.id==='echo'?'#e0dce1':'#fff1df'} castShadow={quality === 'high'} shadow-mapSize={[2048, 2048]} shadow-camera-left={-22} shadow-camera-right={22} shadow-camera-top={22} shadow-camera-bottom={-22} shadow-camera-near={1} shadow-camera-far={65} shadow-bias={-.00025} shadow-normalBias={.035}/>
- <pointLight position={[0, 6, -6]} intensity={90} distance={24} decay={2} color={room?.light ?? '#fff1ce'}/>
- <pointLight position={[-5, 5, -17]} intensity={65} distance={20} decay={2} color={room?.light ?? '#ffebc6'}/>
- <pointLight position={[5, 5, -16]} intensity={65} distance={20} decay={2} color={room?.light ?? '#ffebc6'}/>
+ <LightRig place={place} quality={quality}/>
  {room ? <Gallery room={room} selected={selected} onSelect={onSelect}/> : <>{(place==="entrance" || size.width/size.height>=.85) && <Exterior />}<Hall />{place==='hall'&&<Doorways target={door} onDoor={onDoor} reduced={reduced}/>}</>}
  <DoorJourney target={door} reduced={reduced} onArrival={onArrival}/>
  <CameraRig place={place} selected={selected} reduced={reduced} onSettled={onSettled}/>
@@ -116,5 +105,5 @@ export default function MuseumScene(props: Props) {
     const [contextLost, setContextLost] = useState(false);
     if (contextLost)
         return <div className="scene-error" role="status">The 3D view was interrupted. <button onClick={() => location.reload()}>Reload the museum</button></div>;
-    return <Canvas shadows={props.quality === 'high' ? 'percentage' : false} dpr={props.quality === 'low' ? 1 : [1, 1.5]} frameloop="demand" camera={{ position: [0, 4.6, 20], fov: 49, near: .1, far: 120 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.domElement.addEventListener('webglcontextlost', () => setContextLost(true), { once: true }); gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; }}><Stage {...props}/></Canvas>;
+    return <Canvas shadows={props.quality === 'high' ? 'percentage' : false} dpr={props.quality === 'low' ? 1 : [1, 1.5]} frameloop="demand" camera={{ position: [0, 4.6, 20], fov: 49, near: .1, far: 120 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.domElement.addEventListener('webglcontextlost', () => setContextLost(true), { once: true }); gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.02; if (location.search.includes('stats')) (window as unknown as { __museumGl?: THREE.WebGLRenderer }).__museumGl = gl; }}><Stage {...props}/></Canvas>;
 }
