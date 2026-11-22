@@ -2,7 +2,7 @@
 // (name="diary"), exactly as the editor's form expects. When writing ends (blur — which also
 // happens when the visitor presses Save) the text is tidied once; the visitor sees what changed
 // and can compare with or restore the original. Nothing is rewritten while typing.
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { tidyDiary } from './diaryTextFormatting';
 
 export function DiaryField({ defaultValue }: { defaultValue?: string }) {
@@ -10,6 +10,16 @@ export function DiaryField({ defaultValue }: { defaultValue?: string }) {
     const [tidied, setTidied] = useState<{ original: string; changes: string[] } | null>(null);
     const [compare, setCompare] = useState(false);
     const declined = useRef<string | null>(null);
+    const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+    // Pressing Save: tidy inside the form's submit (capture phase, before the editor reads
+    // FormData) instead of on blur, so no notice appears under the pointer mid-click.
+    useEffect(() => {
+        const form = area.current?.form; if (!form) return;
+        const beforeSave = () => tidy();
+        form.addEventListener('submit', beforeSave, true);
+        return () => form.removeEventListener('submit', beforeSave, true);
+    });
     function tidy() {
         const el = area.current; if (!el) return;
         const value = el.value;
@@ -17,8 +27,11 @@ export function DiaryField({ defaultValue }: { defaultValue?: string }) {
         const result = tidyDiary(value);
         if (result.text === value) return;
         el.value = result.text;
-        setTidied({ original: tidied && value === tidied.original ? tidied.original : value, changes: result.changes });
-        setCompare(false);
+        // The value changes at once; the notice appears a moment later so an in-progress click
+        // (Safari does not focus buttons) is never displaced by the layout shift.
+        const next = { original: value, changes: result.changes };
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(() => { setTidied(next); setCompare(false); }, 300);
     }
     function undo() {
         if (!tidied || !area.current) return;
@@ -26,7 +39,7 @@ export function DiaryField({ defaultValue }: { defaultValue?: string }) {
         setTidied(null); setCompare(false); area.current.focus();
     }
     return <div className="diary-field">
-        <label>Your diary<textarea ref={area} name="diary" defaultValue={defaultValue} required rows={5} placeholder="What would you like to remember?" spellCheck onBlur={tidy} onInput={() => { if (tidied) setTidied(null); }}/></label>
+        <label>Your diary<textarea ref={area} name="diary" defaultValue={defaultValue} required rows={5} placeholder="What would you like to remember?" spellCheck onBlur={e => { const next = e.relatedTarget as HTMLElement | null; if (!(next instanceof HTMLButtonElement && next.type === 'submit')) tidy(); }} onInput={() => { if (timer.current) clearTimeout(timer.current); if (tidied) setTidied(null); }}/></label>
         {tidied && <div className="diary-tidy" role="status">
             <p><span className="diary-tidy-mark" aria-hidden="true">✓</span> Tidied {tidied.changes.join(', ')}. Your words are unchanged.</p>
             <div className="diary-tidy-actions"><button type="button" aria-expanded={compare} onClick={() => setCompare(!compare)}>{compare ? 'Hide original' : 'Show original'}</button><button type="button" onClick={undo}>Undo</button></div>
