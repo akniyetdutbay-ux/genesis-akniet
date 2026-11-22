@@ -18,7 +18,7 @@ export function AccountRoot(){
  useEffect(()=>{if(owner)void client!.from('profiles').upsert({user_id:owner},{onConflict:'user_id',ignoreDuplicates:true}).then(({error})=>{if(error)console.error('Profile initialization failed',error.code)})},[owner]);
  if(owner===undefined)return <p>Opening your museum…</p>;
  if(recover||(!owner&&!demo))return <main className="admission"><div className="admission-cover"><img width="52" height="52" src="/favicon.svg" alt=""/><h1>Museum <br/>of Days</h1><p>Every day deserves to be remembered.</p></div><div className="admission-form"><Account recovery={recover} done={()=>setRecover(false)}/>{!recover&&<button className="demo-entry" onClick={()=>{sessionStorage.setItem('museum-demo','yes');setDemo(true)}}>Explore Demo</button>}</div></main>;
- return <Suspense fallback={<p>Opening the museum�</p>}><>{owner&&welcome&&<div className="auth-welcome" role="status">Your account is ready. You are signed in. <button onClick={()=>setWelcome(false)} aria-label="Dismiss">×</button></div>}<App key={owner??'guest'} owner={owner}/></></Suspense>;
+ return <Suspense fallback={<p>Opening the museum…</p>}><>{owner&&welcome&&<div className="auth-welcome" role="status">Your account is ready. You are signed in. <button onClick={()=>setWelcome(false)} aria-label="Dismiss">×</button></div>}<App key={owner??'guest'} owner={owner}/></></Suspense>;
 }
 
 export function Account({recovery=false,done}:{recovery?:boolean;done?:()=>void}){

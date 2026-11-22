@@ -2,6 +2,8 @@ import {sourceOf,mediaElement} from './soundtrack';
 import {Account} from './Account';
 import {client,hydrate,prepareOpening,removeCloud,saveCloud} from './cloud';
 import { VisitorGuide } from './VisitorGuide';
+import { GalleryArtworkControls } from './GalleryArtworkControls';
+import { MuseumSettings } from './MuseumSettings';
 import { readMemories } from './memories';
 import { MemoryEditor, MemoryViewer } from './MemoryUI';
 
@@ -13,7 +15,7 @@ import { Component, Suspense, lazy, useCallback, useEffect, useRef, useState } f
 
 import type { ReactNode } from 'react';
 
-import { ArrowLeft, ChevronLeft, ChevronRight, DoorOpen, Images, Settings2, Volume2, VolumeX, X } from 'lucide-react';
+import { ArrowLeft, DoorOpen, Images, Settings2, Volume2, VolumeX, X } from 'lucide-react';
 
 import { useGSAP } from '@gsap/react';
 
@@ -67,7 +69,7 @@ class SceneBoundary extends Component<{
 
 function Mark() { return <svg width="31" height="38" viewBox="0 0 31 38" fill="none" aria-hidden="true"><path d="M3 36V16a12.5 12.5 0 0 1 25 0v20M8 36V16a7.5 7.5 0 0 1 15 0v20M0 36h31M15.5 20v16" stroke="currentColor" strokeWidth="1.4"/></svg>; }
 
-function Dialog({ title, onClose, children }: {
+function Dialog({ title, onClose, children, wide = false }: {
 
     title: string;
 
@@ -75,7 +77,9 @@ function Dialog({ title, onClose, children }: {
 
     children: ReactNode;
 
-}) { const ref = useRef<HTMLDialogElement>(null); useEffect(() => { const el = ref.current!; const last = document.activeElement as HTMLElement; el.showModal(); return () => { el.close(); last?.focus(); }; }, []); return <dialog ref={ref} className="dialog" aria-labelledby="dialog-title" onCancel={e => { e.preventDefault(); onClose(); }} onClick={e => { if (e.target === e.currentTarget)
+    wide?: boolean;
+
+}) { const ref = useRef<HTMLDialogElement>(null); useEffect(() => { const el = ref.current!; const last = document.activeElement as HTMLElement; el.showModal(); return () => { el.close(); last?.focus(); }; }, []); return <dialog ref={ref} className={wide ? "dialog dialog-wide" : "dialog"} aria-labelledby="dialog-title" onCancel={e => { e.preventDefault(); onClose(); }} onClick={e => { if (e.target === e.currentTarget)
 
     onClose(); }}><div className="dialog-inner"><button className="icon-button close" aria-label="Close dialog" onClick={onClose}><X size={22}/></button><h2 id="dialog-title">{title}</h2>{children}</div></dialog>; }
 
@@ -169,7 +173,7 @@ export default function App({owner}:{owner:string|null}) {
 
     const onSelect = useCallback((i:number)=>{if(!loaded||busy)return;setSelected(i);const memory=memories.find(m=>m.room===place&&m.slot===i);if(memory){
       stopStory();const request=ticket.current;
-      void setAmbience(false);setSound(false);setNotice('Opening memory�');
+      void setAmbience(false);setSound(false);setNotice('Opening memory…');
       const source=sourceOf(memory);
       function start(url:string){
         const player=mediaElement(source?.type==='video_upload');
@@ -294,7 +298,7 @@ export default function App({owner}:{owner:string|null}) {
 
  <div className="gallery-top"><button className="back-button" disabled={busy} onClick={() => selected !== null ? setSelected(null) : navigate('hall')}><ArrowLeft size={17}/>{selected !== null ? 'Back to the gallery' : 'Main hall'}</button><nav className="room-switch" aria-label="Emotional galleries">{rooms.map(r => <button key={r.id} aria-current={r.id === place ? 'page' : undefined} onClick={() => navigate(r.id)} disabled={busy}>{r.name}</button>)}</nav></div>
 
- {!art ? <section className="gallery-copy reveal"><h1>{room.name}</h1><p className="emotion-name">{room.emotion}</p><p className="gallery-line">{room.line}</p><button className="art-button" disabled={busy||!loaded||!!storageError} onClick={() => onSelect(firstEmpty)}>Create a memory</button>{sampleIndex>=0&&<button className="art-button sample-action" disabled={busy||!loaded} onClick={()=>onSelect(sampleIndex)}>Explore demo memory</button>}</section> : <section className="art-detail"><div className="art-detail-title"><span className="sample-label">{art.memory ? (art.memory.kind==='demo'?'Demo sample':art.memory.kind==='test'?'Test memory · local':art.memory.cloud?'Private cloud memory':'Personal memory · local') : 'A place for your next memory'}</span><h1>{art.title}</h1><p>{art.subtitle}</p><button className="art-button" disabled={busy||!loaded} onClick={()=>onSelect(selected!)}>{art.memory?'Open living memory':'Create a memory'}</button></div><p className="art-note">{art.note}</p><div className="art-pager"><button className="icon-button" aria-label="Previous artwork" onClick={() => setSelected(i => Math.max(0, (i ?? 0) - 1))} disabled={selected === 0}><ChevronLeft size={24}/></button><span>{selected! + 1} / {room.works.length}</span><button className="icon-button" aria-label="Next artwork" onClick={() => setSelected(i => Math.min(room.works.length - 1, (i ?? 0) + 1))} disabled={selected === room.works.length - 1}><ChevronRight size={24}/></button></div></section>}
+ <GalleryArtworkControls room={room} art={art} selected={selected} busy={busy} loaded={loaded} storageError={storageError} firstEmpty={firstEmpty} sampleIndex={sampleIndex} onFocus={setSelected} onOpen={onSelect}/>
 
  </> : null}
 
@@ -304,7 +308,7 @@ export default function App({owner}:{owner:string|null}) {
 
  <span className="sr-only" role="status" aria-live="polite">{busy ? 'Moving through the museum' : room ? `${room.name}, ${room.emotion}` : place === 'hall' ? 'You are in the main hall' : 'Museum entrance'}</span>
 
- {panel === 'settings' && <Dialog title="Make yourself at home." onClose={closePanel}><p className="dialog-intro">A few small adjustments for your visit.</p><div className="setting-row"><div><h3>Ambient sound</h3><p>A quiet, original tonal soundscape.</p></div><button role="switch" aria-checked={sound} aria-label="Ambient sound" className={`toggle ${sound ? 'on' : ''}`} onClick={toggleSound}><span /></button></div>{audioError && <p role="alert">{audioError}</p>}<fieldset className="setting-block"><legend>Motion</legend><p>Reduced motion skips camera journeys. Your system preference is always respected.</p><div className="segmented"><button aria-pressed={motion === 'system'} onClick={() => setMotion('system')}>Follow system</button><button aria-pressed={motion === 'reduced'} onClick={() => setMotion('reduced')}>Reduced</button></div></fieldset><fieldset className="setting-block"><legend>Rendering quality</legend><p>Light uses fewer pixels and turns off real-time shadows.</p><div className="segmented"><button aria-pressed={quality === 'high'} onClick={() => setQuality('high')}>Detailed</button><button aria-pressed={quality === 'low'} onClick={() => setQuality('low')}>Light</button></div></fieldset><div className="setting-row"><div><h3>Lightweight view</h3><p>A simple architectural fallback without 3D.</p></div><button role="switch" aria-label="Lightweight view" aria-checked={flat} className={`toggle ${flat ? 'on' : ''}`} onClick={() => setFlat(!flat)}><span /></button></div><p className="dialog-footnote">Preferences apply to this visit.</p></Dialog>}
+ {panel === 'settings' && <Dialog title="Your space." wide onClose={closePanel}><MuseumSettings owner={owner} memoryCount={memories.filter(m=>m.kind!=='demo'&&m.kind!=='test').length} onOpenCollection={()=>setPanel('collection')} sound={sound} onToggleSound={toggleSound} audioError={audioError} motion={motion} setMotion={setMotion} systemReduced={systemReduced} quality={quality} setQuality={setQuality} flat={flat} setFlat={setFlat}/></Dialog>}
 
  {panel === 'about' && <Dialog title="Not every day is extraordinary. Every day is yours." onClose={closePanel}><p className="dialog-intro">Museum of Days is a place for the things you want to keep: a feeling, a person, the light on an ordinary afternoon.</p><p>Here, your photographs and words become exhibits. Each finds a place in a gallery shaped by how that day felt.</p><div className="about-emotions">{rooms.map(r => <span key={r.id}>{r.name}<small>{r.emotion.replace('The gallery of ', '')}</small></span>)}</div><p>Choose an empty frame to keep a day. {owner?'Your account keeps your private collection across devices.':'Sign in to save a private memory across devices.'}</p><button className="solid-button" onClick={() => navigate('hall')}>Visit the main hall</button></Dialog>}
 

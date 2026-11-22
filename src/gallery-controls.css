@@ -1,0 +1,36 @@
+/* Gallery exhibit bar — a museum wall label, the artwork pager and one action (Claude UX). */
+.gallery-bar{position:absolute;left:3.3vw;right:3.3vw;bottom:78px;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:28px;padding:16px 22px 16px 26px;color:#f7f0e2;background:linear-gradient(90deg,rgba(28,30,25,.92),rgba(28,30,25,.78));border-top:1px solid rgba(232,214,170,.42);box-shadow:0 18px 50px rgba(10,10,8,.22);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.gallery-bar h1{font-size:clamp(30px,3vw,48px);line-height:1;margin:0;overflow-wrap:anywhere}
+.gb-label{min-width:0;display:grid;gap:6px}
+.gb-kicker{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#d9c79e}
+.gb-kicker i{width:22px;height:1px;background:currentColor;opacity:.6}
+.gallery-bar:not(.is-focused) .gb-label{grid-template-columns:auto 1fr;align-items:baseline;column-gap:18px}
+.gallery-bar:not(.is-focused) .gb-line{grid-column:1/-1}
+.gb-line{font-family:var(--serif);font-size:clamp(17px,1.5vw,22px);color:#efe6d4}
+.gb-date{font-size:13px;color:#d8d0bf;letter-spacing:.02em}
+.gb-pager{display:flex;align-items:center;gap:6px;justify-self:center;padding:4px;border:1px solid rgba(232,214,170,.38);border-radius:999px}
+.gb-pager button{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#f7f0e2}
+.gb-pager button:hover:not(:disabled){background:rgba(232,214,170,.16)}
+.gb-pager button:disabled{opacity:.3}
+.gb-count{min-width:84px;text-align:center;font-size:13px;letter-spacing:.08em;font-variant-numeric:tabular-nums;color:#e9e0cd}
+.gb-count b{font-family:var(--serif);font-weight:500;font-size:22px;letter-spacing:0;color:#fff8ea;margin-right:3px}
+.gb-actions{justify-self:end;display:flex;align-items:center;gap:22px;flex-wrap:wrap;justify-content:flex-end}
+.gb-primary{min-height:46px;padding:0 22px;border:1px solid #d9c18c;color:#1f201b;background:#efe3c6;font-size:13px;letter-spacing:.02em}
+.gb-primary:hover:not(:disabled){background:#fff5dc}
+.gb-quiet{min-height:44px;font-size:12px;color:#e9e0cd;text-decoration:underline;text-decoration-color:rgba(233,224,205,.45);text-underline-offset:6px}
+.gb-quiet:hover:not(:disabled){color:#fff;text-decoration-color:currentColor}
+.gallery-bar button:focus-visible{outline:2px solid #e3c98d;outline-offset:3px}
+@media(max-width:900px){.gallery-bar{grid-template-columns:minmax(0,1fr) auto;gap:14px 18px}.gb-actions{grid-column:1/-1;justify-self:stretch;justify-content:space-between}}
+@media(max-width:700px){
+ .gallery-bar{left:12px;right:12px;bottom:calc(126px + env(safe-area-inset-bottom));padding:12px 14px;gap:10px 12px;grid-template-columns:minmax(0,1fr) auto}
+ .gallery-bar h1{font-size:30px}
+ .gallery-bar:not(.is-focused) .gb-line{display:none}
+ .gb-kicker{font-size:10px;letter-spacing:.12em}
+ .gb-pager{gap:0;padding:2px}
+ .gb-pager button{width:44px;height:44px}
+ .gb-count{min-width:62px;font-size:12px}
+ .gb-count b{font-size:19px}
+ .gb-actions{gap:14px}
+ .gb-primary{flex:1;min-height:44px}
+}
+@media(max-height:650px) and (min-width:701px){.gallery-bar{bottom:64px;padding-block:10px}.gallery-bar h1{font-size:30px}}
