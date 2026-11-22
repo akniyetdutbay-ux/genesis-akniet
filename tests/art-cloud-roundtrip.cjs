@@ -5,7 +5,7 @@ const assert=require('node:assert/strict');
  if(!process.env.QA_EMAIL||!process.env.QA_PASSWORD)throw Error('A confirmed disposable QA account is required.');
  const browser=await chromium.launch({headless:false});
  try{
-  const p=await browser.newPage({viewport:{width:1440,height:900},reducedMotion:'reduce'});
+  const p=await browser.newPage({...(process.env.MOBILE_CHROMIUM?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}:{viewport:{width:1440,height:900}}),reducedMotion:'reduce'});
   await p.context().addInitScript(installProbe);
   function installProbe(){const native=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){if(!this.muted)window.qaSound=this;return native.call(this)}}
   const errors=[];p.on('pageerror',e=>errors.push(e.message));
@@ -14,7 +14,7 @@ const assert=require('node:assert/strict');
   await p.getByRole('button',{name:'Continue with Email'}).click();
   await p.getByRole('button',{name:'Enter the museum',exact:true}).click();
   await p.locator('[data-place=hall][data-ready=true]').waitFor();
-  await p.getByText('Accessible gallery navigation',{exact:true}).click();await p.getByRole('button',{name:'Glow',exact:true}).click();await p.locator('[data-place=glow]').waitFor();await p.waitForTimeout(400);
+  if(process.env.MOBILE_CHROMIUM){await p.touchscreen.tap(195,405)}else{await p.getByText('Accessible gallery navigation',{exact:true}).click();await p.getByRole('button',{name:'Glow',exact:true}).click()}await p.locator('[data-place=glow]').waitFor();await p.waitForTimeout(400);
   await p.getByRole('button',{name:'Create a memory',exact:true}).click();
   await p.getByLabel('Your diary').fill('A quiet walk beside the river.');
   const title='Atelier QA '+Date.now();await p.locator('[name=title]').fill(title);
@@ -30,7 +30,10 @@ const assert=require('node:assert/strict');
   wav.writeUInt32LE(rate,24);wav.writeUInt32LE(rate*2,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);
   wav.write('data',36);wav.writeUInt32LE(bytes,40);
   for(let i=0;i<bytes/2;i++)wav.writeInt16LE(Math.round(3000*Math.sin(i*2*Math.PI*220/rate)),44+i*2);
-  if(process.env.QA_SOUND_FILE){
+  if(process.env.QA_SOUND_URL){
+   await p.getByLabel('Sound source').selectOption('audio_url');
+   await p.getByLabel('Direct HTTPS audio URL').fill(process.env.QA_SOUND_URL);
+  }else if(process.env.QA_SOUND_FILE){
    const video=process.env.QA_SOUND_FILE.endsWith('.mp4');
    await p.getByLabel('Sound source').selectOption(video?'video_upload':'audio_upload');
    await p.getByLabel(video?'Video with sound':'Audio file',{exact:true}).setInputFiles(process.env.QA_SOUND_FILE);

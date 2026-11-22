@@ -48,7 +48,7 @@ export async function inspectSound(source:Soundtrack, file?:Blob):Promise<number
    const finish=(error?:string)=>{clearTimeout(timer);clearInterval(poll);node.onplaying=null;node.onerror=null;error?reject(Error(error)):resolve(Number.isFinite(node.duration)?node.duration:undefined)};
    const timer=window.setTimeout(()=>finish(video?'No playable audio track was detected in this video.':'Audio could not load. Check access and browser support.'),12000);
    node.onerror=()=>finish('This browser could not decode the media or access its URL.');
-   node.onplaying=()=>{const check=()=>{if(!video||node.audioTracks?.length||node.mozHasAudio||(node.webkitAudioDecodedByteCount??0)>0)finish()};poll=window.setInterval(check,80);check()};
+   node.onplaying=()=>{clearInterval(poll);const check=()=>{if(!video||node.audioTracks?.length||node.mozHasAudio||(node.webkitAudioDecodedByteCount??0)>0)finish()};poll=window.setInterval(check,80);check()};
    node.src=url;void node.play().catch(()=>finish('This browser could not play the selected media.'));
   });
  }finally{node.pause();node.removeAttribute('src');node.load();if(file)URL.revokeObjectURL(url)}
