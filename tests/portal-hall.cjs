@@ -8,7 +8,8 @@ const rooms=['glow','hush','echo','pulse'];
 async function admit(page,hash){
  await page.goto('about:blank');await page.goto(base+'/?stats#'+hash);
  const demo=page.getByRole('button',{name:'Explore Demo',exact:true});
- if(await demo.isVisible({timeout:4000}).catch(()=>false))await demo.click();
+ await demo.or(page.locator('[data-place]')).first().waitFor();
+ if(await demo.isVisible())await demo.click();
  await page.locator(`[data-place=${hash}][data-ready=true]`).waitFor({timeout:30000});
  await page.waitForTimeout(600);
 }
