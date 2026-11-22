@@ -1,0 +1,11 @@
+/* Living Memory refinements (Claude UX): the photograph leads, words follow quietly.
+   Layered on top of theatre.css (Codex) without touching playback, controls or layout logic. */
+.theatre .theatre-notes h1{font-size:clamp(30px,3.4vw,54px);line-height:1;letter-spacing:-.01em}
+.theatre .diary-leaf p{font-size:clamp(17px,1.4vw,22px);line-height:1.38;max-height:none;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;color:#e9e1cf}
+.theatre .diary-leaf button{display:inline-flex;align-items:center;min-height:40px;padding:0;margin-top:6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;color:#e8d6a8;border-bottom:1px solid rgba(232,214,168,.5)}
+.theatre .diary-leaf button:hover{color:#fff4da;border-color:currentColor}
+.theatre .diary-leaf button:focus-visible{outline:2px solid #e3c98d;outline-offset:4px}
+@media(max-width:700px){
+ .theatre .theatre-notes h1{font-size:clamp(26px,7.4vw,34px)}
+ .theatre .diary-leaf p{font-size:16px;-webkit-line-clamp:2}
+}
