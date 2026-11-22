@@ -1,0 +1,45 @@
+/* Interface themes (Claude UX). data-theme on <html> is set before first paint by index.html
+   and kept in sync by theme.ts. These rules re-colour the interface layer only — dialogs,
+   settings, editor, collection, admission and diary helpers. 3D gallery lighting is untouched. */
+:root[data-theme=light]{--ui-bg:#f4efe3;--ui-surface:#fbf8f0;--ui-sunk:#e9e2d2;--ui-ink:#272822;--ui-muted:#5c5c50;--ui-faint:#7c7a6c;--ui-line:#cfc6b2;--ui-accent:#8a6a32;--ui-accent-soft:#b59458;--ui-button:#2f3a30;--ui-button-ink:#f7f1e4;--ui-field:#fffdf7;--ui-field-line:#bdb4a0;--ui-danger:#9b2f2f;--ui-backdrop:rgba(28,29,27,.54);--ui-shadow:0 24px 90px rgba(25,24,20,.22)}
+:root[data-theme=dark]{--ui-bg:#191815;--ui-surface:#211f1b;--ui-sunk:#2b2924;--ui-ink:#f1eadb;--ui-muted:#c2b8a3;--ui-faint:#9a917e;--ui-line:#3c3830;--ui-accent:#d2ae6a;--ui-accent-soft:#a98a52;--ui-button:#e7d6ae;--ui-button-ink:#1c1b17;--ui-field:#15140f;--ui-field-line:#4a453a;--ui-danger:#f08f7f;--ui-backdrop:rgba(6,6,5,.72);--ui-shadow:0 30px 100px rgba(0,0,0,.55)}
+:root[data-theme] .dialog{background:var(--ui-surface);color:var(--ui-ink);box-shadow:var(--ui-shadow)}
+:root[data-theme] .dialog::backdrop{background:var(--ui-backdrop)}
+:root[data-theme] .dialog p{color:var(--ui-muted)}
+:root[data-theme] .dialog p.dialog-intro{color:var(--ui-ink)}
+:root[data-theme] .dialog .close:hover{background:var(--ui-sunk)}
+:root[data-theme] .dialog :focus-visible{outline-color:var(--ui-accent)}
+:root[data-theme] .setting-row{border-color:var(--ui-line)}
+:root[data-theme] .toggle{background:var(--ui-field-line)}
+:root[data-theme] .toggle.on{background:var(--ui-accent)}
+:root[data-theme] .toggle span{background:var(--ui-surface)}
+:root[data-theme] .segmented{background:var(--ui-sunk)}
+:root[data-theme] .segmented button{color:var(--ui-muted)}
+:root[data-theme] .segmented button[aria-pressed=true]{background:var(--ui-surface);color:var(--ui-ink);box-shadow:inset 0 0 0 1px var(--ui-accent),0 2px 6px rgba(0,0,0,.12)}
+:root[data-theme] .solid-button{background:var(--ui-button);color:var(--ui-button-ink)}
+:root[data-theme] .solid-button:hover{filter:brightness(1.08)}
+:root[data-theme] .memory-editor :is(input,textarea,select),:root[data-theme] .account-card input{background:var(--ui-field);color:var(--ui-ink);border-color:var(--ui-field-line)}
+:root[data-theme] .memory-editor :is(input,textarea)::placeholder,:root[data-theme] .account-card input::placeholder{color:var(--ui-faint)}
+:root[data-theme] .memory-editor :is(input,textarea,select):focus{outline-color:var(--ui-accent)}
+:root[data-theme] .memory-editor [role=alert],:root[data-theme] .dialog [role=alert]{color:var(--ui-danger)}
+:root[data-theme] .collection-list button{border-color:var(--ui-line)}
+:root[data-theme] .memory-kind{color:var(--ui-faint)}
+:root[data-theme] .admission{color:var(--ui-ink);background:radial-gradient(ellipse at 14% 24%,var(--ui-surface),var(--ui-bg) 75%)}
+:root[data-theme] .admission-cover{border-color:var(--ui-accent-soft)}
+:root[data-theme] .account-rule{border-color:var(--ui-line)}
+:root[data-theme] .account-card .password-entry .password-reveal{color:var(--ui-muted)}
+:root[data-theme] .account-card .password-reveal:hover{background:var(--ui-sunk)}
+:root[data-theme] .account-card input.verification-code{background:var(--ui-field);color:var(--ui-ink);border-color:var(--ui-field-line)}
+:root[data-theme] .account-card input.verification-code::placeholder{color:var(--ui-faint)}
+:root[data-theme] .auth-welcome{background:var(--ui-surface);color:var(--ui-ink)}
+:root[data-theme] .storage-error{background:var(--ui-surface);color:var(--ui-danger);border-left:3px solid var(--ui-danger)}
+:root[data-theme=dark] body{background:var(--ui-bg)}
+:root[data-theme=dark] ::selection{background:#8a6a32;color:#fff}
+
+/* Diary tidy notice in the memory editor */
+.diary-tidy{margin-top:10px;padding:12px 14px;border-left:2px solid var(--ui-accent,#8a6a32);background:var(--ui-sunk,#ece6d8);font-size:13px}
+.dialog .diary-tidy p{margin:0;color:var(--ui-ink,#2b2b25);font-size:13px;line-height:1.5}
+.diary-tidy-mark{color:var(--ui-accent,#8a6a32);margin-right:4px}
+.diary-tidy-actions{display:flex;gap:18px;margin-top:6px}
+.diary-tidy-actions button{min-height:36px;padding:0;text-decoration:underline;text-underline-offset:4px;font-size:12px;color:var(--ui-ink,#2b2b25)}
+.diary-tidy-original{margin:8px 0 0;padding:10px 12px;font-family:var(--serif);font-size:16px;line-height:1.5;white-space:pre-wrap;color:var(--ui-muted,#5c5c50);border:1px dashed var(--ui-line,#cfc6b2)}

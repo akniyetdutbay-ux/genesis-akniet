@@ -108,3 +108,5 @@
 .verification-actions button:hover:not(:disabled){color:#302c24}
 @media(max-width:700px){.verification-card{padding:6px 0}.account-card input.verification-code{min-height:64px;letter-spacing:.25em}.verification-actions{gap:10px 16px}}
 @media(max-width:700px){.auth-welcome{top:calc(76px + env(safe-area-inset-top));max-width:calc(100vw - 32px);width:max-content}}
+
+@media(max-width:700px){.museum .gallery-copy{bottom:calc(138px + env(safe-area-inset-bottom))}}

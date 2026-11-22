@@ -24,8 +24,8 @@ export function MusicSearch({selected,onSelect}:{selected?:Track;onSelect:(track
           found.push({id:String(item.trackId),title:item.trackName,artist:item.artistName,url:item.trackViewUrl});
         }
       }
-      setTracks(found);setStatus(found.length?'Choose a recording.':'No recordings found.');
+      setTracks(found);setStatus(found.length?'Choose a song link. Apple Music tracks open in Apple Music; they do not include audio for this museum.':'No recordings found.');
     } catch {if(!controller.signal.aborted)setStatus('Search unavailable. You can paste a music link below.')}
   }
-  return <fieldset><legend>Find a recording</legend><label>Song or artist<input value={query} onChange={e=>{request.current?.abort();setQuery(e.target.value);setTracks([]);setStatus('')}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();if(query.trim().length>=2)void search()}}}/></label><button type="button" disabled={query.trim().length<2} onClick={()=>void search()}>Search music</button><p role="status">{status || (selected ? selected.title+' · '+selected.artist : '')}</p>{tracks.map(t=><button type="button" key={t.id} onClick={()=>{onSelect(t);setStatus('');setTracks([])}}>{t.title} · {t.artist}</button>)}</fieldset>
+  return <fieldset><legend>Find a song on Apple Music</legend><label>Song or artist<input value={query} onChange={e=>{request.current?.abort();setQuery(e.target.value);setTracks([]);setStatus('')}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();if(query.trim().length>=2)void search()}}}/></label><button type="button" disabled={query.trim().length<2} onClick={()=>void search()}>Search music</button><p role="status">{status || (selected ? selected.title+' · '+selected.artist+' (link only — no in-app audio)' : '')}</p>{tracks.map(t=><button type="button" key={t.id} onClick={()=>{onSelect(t);setStatus('');setTracks([])}}>{t.title} · {t.artist}</button>)}</fieldset>
 }
