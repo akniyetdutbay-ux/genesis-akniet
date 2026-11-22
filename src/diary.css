@@ -37,7 +37,7 @@
 @media(prefers-reduced-motion:reduce){.diary-room,.diary-room *{animation:none!important}}
 @media(max-width:760px){
  .reading-room.diary-room{grid-template-columns:1fr;grid-template-rows:minmax(170px,30svh) 1fr}
- .diary-plate::after{background:linear-gradient(180deg,transparent 55%,var(--d-ground))}
+ .diary-plate::after{background:linear-gradient(180deg,transparent 30%,color-mix(in srgb,var(--d-ground) 85%,transparent) 78%,var(--d-ground))}
  .diary-plate-caption{left:20px;bottom:14px}
  .diary-plate-caption span{font-size:18px}
  .diary-page{padding:18px 22px calc(40px + env(safe-area-inset-bottom))}

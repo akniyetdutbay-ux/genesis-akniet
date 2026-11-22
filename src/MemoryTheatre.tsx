@@ -5,6 +5,7 @@ import {ArrowLeft,ArrowRight,Pause,Play,RotateCcw,Volume2,VolumeX,X} from 'lucid
 import {useBlobUrl,type Memory} from './memories';
 import './theatre.css';
 import {DiaryReadingRoom} from './DiaryReadingRoom';
+import './theatre-refine.css';
 
 function diaryLines(text:string,count:number){
  const clauses=text.trim().match(/[^.!?。！？\n]+[.!?。！？]*|[^\s]/gu)?.map(x=>x.trim()).filter(Boolean)??[];
