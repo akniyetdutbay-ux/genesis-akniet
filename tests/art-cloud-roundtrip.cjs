@@ -16,7 +16,7 @@ const assert=require('node:assert/strict');
   await p.locator('[data-place=hall][data-ready=true]').waitFor();
   if(process.env.MOBILE_CHROMIUM){await p.touchscreen.tap(195,405)}else{await p.getByText('Accessible gallery navigation',{exact:true}).click();await p.getByRole('button',{name:'Glow',exact:true}).click()}await p.locator('[data-place=glow]').waitFor();await p.waitForTimeout(400);
   await p.getByRole('button',{name:'Create a memory',exact:true}).click();
-  await p.getByLabel('Your diary').fill('A quiet walk beside the river.');
+  await p.getByLabel('Your diary').fill('осенью   мы гуляли у реки');
   const title='Atelier QA '+Date.now();await p.locator('[name=title]').fill(title);
   await p.locator('[name=date]').fill('2026-06-14');
   const path=require('node:path');
@@ -56,14 +56,14 @@ const assert=require('node:assert/strict');
    await viewer.getByRole('button',{name:'Pause',exact:true}).click();assert(await page.evaluate(()=>window.qaSound.paused));
    await viewer.getByRole('button',{name:'Play',exact:true}).click();await page.waitForFunction(()=>!window.qaSound.paused);
    await viewer.getByRole('button',{name:'Read diary'}).click();
-   await viewer.locator('.reading-room').getByText('A quiet walk beside the river.').waitFor();
+   await viewer.locator('.reading-room').getByText('Осенью мы гуляли у реки.',{exact:true}).waitFor();
    await viewer.getByRole('button',{name:'Back to memory'}).click();
    await viewer.getByRole('button',{name:/Return to gallery/}).click();assert(await page.evaluate(()=>window.qaSound.paused&&!window.qaSound.hasAttribute('src')));
   }
   async function openSaved(page){
    await page.getByRole('button',{name:'The collection',exact:true}).click();
    await page.getByRole('button',{name:new RegExp(title)}).click();
-   await page.getByText('2026-06-14',{exact:true}).first().waitFor();
+   await page.getByText('14 June 2026',{exact:true}).first().waitFor();
    await play(page);
   }
   await play(p);await p.reload();await openSaved(p);
