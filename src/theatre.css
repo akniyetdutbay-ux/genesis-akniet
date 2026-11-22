@@ -15,3 +15,7 @@
  .theatre-hush .lens,.theatre[data-layout=folio] .lens{inset:5%}
 }
 .theatre:not(.running) .theatre-shot,.theatre:not(.running) .diary-leaf p{animation:none}
+.sound-desk{flex-wrap:wrap;justify-content:flex-end;max-width:min(65vw,640px)}
+.sound-desk .song-link-only{font-size:11px;color:#e8c798;white-space:normal}
+.sound-desk .audio-problem{font-size:11px;color:#f3b0a2;white-space:normal}
+@media(max-width:700px){.sound-desk .song-link-only,.sound-desk .audio-problem{font-size:10px}.sound-desk{max-width:56vw;gap:4px}}
