@@ -4,6 +4,7 @@ import type {CSSProperties} from 'react';
 import {ArrowLeft,ArrowRight,Pause,Play,RotateCcw,Volume2,VolumeX,X} from 'lucide-react';
 import {useBlobUrl,type Memory} from './memories';
 import './theatre.css';
+import {DiaryReadingRoom} from './DiaryReadingRoom';
 
 function diaryLines(text:string,count:number){
  const clauses=text.trim().match(/[^.!?。！？\n]+[.!?。！？]*|[^\s]/gu)?.map(x=>x.trim()).filter(Boolean)??[];
@@ -104,6 +105,6 @@ export function MemoryViewer({memory,reduced,soundtrack,onClose}:{memory:Memory;
  <div className="transport"><button aria-label="Previous photograph" disabled={!index} onClick={()=>seek(index-1)}><ArrowLeft/></button><button className="play-key" onClick={toggle} aria-label={playing?'Pause':'Play'}>{playing?<Pause/>:<Play/>}</button><button disabled={index+1>=count} aria-label="Next photograph" onClick={()=>seek(index+1)}><ArrowRight/></button><span>{String(index+1).padStart(2,'0')} / {String(count).padStart(2,'0')}</span><button aria-label="Replay" onClick={replay}><RotateCcw/></button>
  <div className="sound-desk">{soundtrack&&<>{quiet&&<button onClick={()=>{if(ended)replay();else{setPlaying(true);startAudio()}}}>Play soundtrack</button>}<button aria-label={muted?'Unmute sound':'Mute sound'} aria-pressed={muted} onClick={()=>{soundtrack.muted=!muted;setMuted(!muted)}}>{muted?<VolumeX/>:<Volume2/>}</button><input aria-label="Soundtrack volume" type="range" min="0" max="1" step=".05" value={volume} onChange={e=>{const v=Number(e.target.value);soundtrack.volume=v;setVolume(v)}}/></>}{audioProblem&&<span className="audio-problem" role="status">{audioProblem}</span>}
  {link&&<>{service?.embed&&<button onClick={()=>showEmbed(!embedded)}>{embedded?'Close player':'Open '+service.provider+' player'}</button>}<a target="_blank" rel="noopener noreferrer" href={link}>Open song</a></>}</div></div>
- {embedded&&service?.embed&&<iframe className="platform-player" src={service.embed} title={service.provider+' official player'} allow="encrypted-media; fullscreen; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin"/>}</footer>{read&&<section className="reading-room"><button onClick={()=>setRead(false)}>Back to memory</button><time>{dateText}</time><h2>{memory.title}</h2><p>{memory.diary}</p>{memory.track&&<p>{memory.track.title} · {memory.track.artist}</p>}</section>}
+ {embedded&&service?.embed&&<iframe className="platform-player" src={service.embed} title={service.provider+' official player'} allow="encrypted-media; fullscreen; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin"/>}</footer>{read&&<DiaryReadingRoom memory={memory} prints={prints} dateText={dateText} onBack={()=>setRead(false)} onPhoto={i=>{setRead(false);seek(i)}}/>}
  </dialog>;
 }

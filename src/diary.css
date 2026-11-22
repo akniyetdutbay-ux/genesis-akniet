@@ -1,0 +1,47 @@
+/* Atmospheric Diary Reading Room (Claude UX). Colours come from diaryAtmosphere.ts as --d-* variables. */
+.reading-room.diary-room{position:absolute;inset:0;z-index:5;padding:0;overflow:hidden;display:grid;grid-template-columns:minmax(300px,42%) 1fr;background:var(--d-ground);color:var(--d-ink);font-family:'DM Sans',system-ui,sans-serif;animation:diary-in .6s ease both}
+.diary-room :is(p,time,button,h2){margin:0;font:inherit}
+.diary-plate{position:relative;overflow:hidden;background:var(--d-ground2)}
+.diary-plate .plate{position:absolute;inset:0;width:100%;height:100%;display:block}
+.diary-plate::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 70%,var(--d-ground));pointer-events:none}
+.diary-plate-caption{position:absolute;left:28px;bottom:26px;right:28px;display:grid;gap:4px;color:var(--d-ink)}
+.diary-plate-caption span{font-family:var(--serif);font-style:italic;font-size:21px;line-height:1.2}
+.diary-plate-caption small{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--d-soft)}
+.diary-page{overflow:auto;padding:clamp(28px,7vh,84px) clamp(24px,7vw,110px) 64px clamp(24px,5vw,72px);display:flex;flex-direction:column;align-items:flex-start;scrollbar-color:var(--d-soft) transparent}
+.diary-room .diary-back{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0 2px;margin-bottom:clamp(22px,6vh,64px);font-size:13px;color:var(--d-ink);border-bottom:1px solid color-mix(in srgb,var(--d-ink) 35%,transparent)}
+.diary-room .diary-back:hover{border-color:var(--d-ink)}
+.diary-room .diary-back:focus-visible,.diary-prints button:focus-visible{outline:2px solid var(--d-accent);outline-offset:4px}
+.diary-room .diary-kicker{display:flex;align-items:center;gap:12px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--d-accent)}
+.diary-kicker i{width:28px;height:1px;background:currentColor}
+.diary-room time{margin-top:18px;font-size:14px;letter-spacing:.04em;color:var(--d-soft)}
+.diary-room h2{margin:10px 0 0;font-family:var(--serif);font-weight:400;font-size:clamp(40px,5vw,72px);line-height:1;letter-spacing:-.02em;max-width:16ch;overflow-wrap:anywhere}
+.diary-text{margin-top:clamp(26px,5vh,48px);max-width:62ch;padding-top:28px;border-top:1px solid color-mix(in srgb,var(--d-accent) 45%,transparent)}
+.diary-room .diary-text p{font-family:var(--serif);font-size:clamp(20px,1.7vw,24px);line-height:1.62;white-space:pre-wrap;overflow-wrap:break-word;hyphens:auto}
+.diary-room .diary-text p+p{margin-top:1em}
+.diary-text p:first-child::first-letter{float:left;font-size:3.4em;line-height:.82;padding:.06em .1em 0 0;color:var(--d-accent)}
+.diary-room .diary-empty{font-style:italic;color:var(--d-soft)}
+.diary-room .diary-song{display:flex;align-items:center;gap:10px;margin-top:36px;font-size:13px;color:var(--d-soft)}
+.diary-prints{display:flex;flex-wrap:wrap;gap:10px;margin-top:34px}
+.diary-prints button{width:64px;height:64px;padding:3px;background:color-mix(in srgb,var(--d-ink) 8%,transparent);border:1px solid color-mix(in srgb,var(--d-ink) 20%,transparent);display:block}
+.diary-prints img{width:100%;height:100%;object-fit:cover;display:block}
+.diary-prints button:hover{border-color:var(--d-accent)}
+.plate-rain{animation:diary-rain 1.6s linear infinite}
+.plate-snow{animation:diary-snow 12s linear infinite}
+.plate-drift{animation:diary-sway 9s ease-in-out infinite alternate;transform-origin:50% 0}
+.plate-fog{animation:diary-sway 14s ease-in-out infinite alternate}
+@keyframes diary-in{from{opacity:0}to{opacity:1}}
+@keyframes diary-rain{from{transform:translateY(-48px)}to{transform:translateY(0)}}
+@keyframes diary-snow{from{transform:translateY(-46px)}to{transform:translateY(0)}}
+@keyframes diary-sway{from{transform:translateX(-8px)}to{transform:translateX(8px)}}
+.theatre.still .diary-room *,.theatre.still .diary-room{animation:none!important}
+@media(prefers-reduced-motion:reduce){.diary-room,.diary-room *{animation:none!important}}
+@media(max-width:760px){
+ .reading-room.diary-room{grid-template-columns:1fr;grid-template-rows:minmax(170px,30svh) 1fr}
+ .diary-plate::after{background:linear-gradient(180deg,transparent 55%,var(--d-ground))}
+ .diary-plate-caption{left:20px;bottom:14px}
+ .diary-plate-caption span{font-size:18px}
+ .diary-page{padding:18px 22px calc(40px + env(safe-area-inset-bottom))}
+ .diary-room .diary-back{margin-bottom:18px}
+ .diary-room h2{font-size:clamp(34px,10vw,46px)}
+ .diary-room .diary-text p{font-size:19px;line-height:1.58}
+}
