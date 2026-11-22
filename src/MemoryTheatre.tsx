@@ -23,7 +23,7 @@ export function MemoryViewer({memory,reduced,soundtrack,onClose}:{memory:Memory;
  const [index,setIndex]=useState(0),[previous,setPrevious]=useState<number|null>(null);
  const [playing,setPlaying]=useState(true),[ended,setEnded]=useState(false),[serial,setSerial]=useState(0);
  const [ready,setReady]=useState(false),[read,setRead]=useState(false),[failed,setFailed]=useState(false);
- const [quiet,setQuiet]=useState(!!soundtrack?.paused),[ratio,setRatio]=useState(1.5);
+ const [quiet,setQuiet]=useState(!!soundtrack?.paused),[audioProblem,setAudioProblem]=useState(''),[ratio,setRatio]=useState(1.5);
  const dialog=useRef<HTMLDialogElement>(null),progress=useRef<HTMLDivElement>(null),stage=useRef<HTMLDivElement>(null);
  const elapsed=useRef(0),video=useRef<HTMLVideoElement>(null);
  const clip=useBlobUrl(memory.clip?.file);
@@ -51,8 +51,26 @@ export function MemoryViewer({memory,reduced,soundtrack,onClose}:{memory:Memory;
   return()=>cancelAnimationFrame(raf);
  },[playing,ready,read,failed,seconds,index,count,soundtrack,serial]);
  useEffect(()=>{const node=video.current;if(!node)return;if(playing&&!read)void node.play().catch(()=>{});else node.pause();return()=>node.pause()},[playing,read,clip,index,serial]);
- useEffect(()=>{if(!soundtrack)return;const error=()=>setQuiet(true);soundtrack.addEventListener('error',error);return()=>soundtrack.removeEventListener('error',error)},[soundtrack]);
- function startAudio(){if(soundtrack)void soundtrack.play().then(()=>setQuiet(false),()=>setQuiet(true))}
+ useEffect(()=>{
+   if(!soundtrack)return;
+   const error=()=>{setQuiet(true);setAudioProblem('The attached audio could not be loaded. Try a supported MP3 or M4A file.')};
+   const paused=()=>setQuiet(true);
+   const playing=()=>{setQuiet(false);setAudioProblem('')};
+   soundtrack.addEventListener('error',error);
+   soundtrack.addEventListener('pause',paused);
+   soundtrack.addEventListener('playing',playing);
+   if(soundtrack.error)error();else setQuiet(soundtrack.paused);
+   return()=>{soundtrack.removeEventListener('error',error);soundtrack.removeEventListener('pause',paused);soundtrack.removeEventListener('playing',playing)};
+  },[soundtrack]);
+ function startAudio(){
+    if(!soundtrack)return;
+    void soundtrack.play().then(()=>{setQuiet(false);setAudioProblem('')},(error:unknown)=>{
+      setQuiet(true);
+      setAudioProblem(error instanceof DOMException&&error.name==='NotAllowedError'
+        ?'Your browser blocked automatic sound. Tap Play soundtrack to try again.'
+        :'The attached audio could not play. Check that the file is supported.');
+    });
+  }
  function seek(i:number){
   const next=Math.min(count-1,Math.max(0,i));if(next<0)return;
   setPrevious(index!==next?index:null);setIndex(next);setReady(false);setFailed(false);setEnded(false);setSerial(n=>n+1);elapsed.current=0;
@@ -78,7 +96,7 @@ export function MemoryViewer({memory,reduced,soundtrack,onClose}:{memory:Memory;
  <section className="theatre-notes"><div className="type-block"><span className="room-signature">{memory.room} <i/> {dateText}</span><h1>{memory.title}</h1></div><div className="diary-leaf"><p key={index+'-'+serial}>{captions[index]}</p><button onClick={showDiary}>Read diary</button></div></section>
  <footer className="theatre-foot"><div className="cue-strip" ref={progress}>{prints.map((_,i)=><button key={i} aria-label={'View photograph '+(i+1)} aria-current={i===index?'step':undefined} className={i<index?'passed':''} onClick={()=>seek(i)}><i/></button>)}</div>
  <div className="transport"><button aria-label="Previous photograph" disabled={!index} onClick={()=>seek(index-1)}><ArrowLeft/></button><button className="play-key" onClick={toggle} aria-label={playing?'Pause':'Play'}>{playing?<Pause/>:<Play/>}</button><button disabled={index+1>=count} aria-label="Next photograph" onClick={()=>seek(index+1)}><ArrowRight/></button><span>{String(index+1).padStart(2,'0')} / {String(count).padStart(2,'0')}</span><button aria-label="Replay" onClick={replay}><RotateCcw/></button>
- <div className="sound-desk">{soundtrack&&<button aria-label={quiet?'Enable Sound':'Mute sound'} onClick={()=>{if(quiet){setPlaying(true);startAudio()}else{soundtrack.pause();setQuiet(true)}}}>{quiet?<VolumeX/>:<Volume2/>}{quiet?'Enable sound':'Sound on'}</button>}{memory.musicUrl&&<a target="_blank" rel="noopener noreferrer" href={memory.musicUrl} title={memory.track?memory.track.title+' · '+memory.track.artist:'Listen at source'}>Open Song ↗</a>}</div></div>
+ <div className="sound-desk">{soundtrack&&<button aria-label={quiet?'Play soundtrack':'Mute sound'} onClick={()=>{if(quiet){setPlaying(true);startAudio()}else{soundtrack.pause();setQuiet(true)}}}>{quiet?<VolumeX/>:<Volume2/>}{quiet?'Play soundtrack':'Sound on'}</button>}{audioProblem&&<span className="audio-problem" role="status">{audioProblem}</span>}{memory.musicUrl&&!soundtrack&&<span className="song-link-only">Song link only — open at source to listen</span>}{memory.musicUrl&&<a target="_blank" rel="noopener noreferrer" href={memory.musicUrl} title={memory.track?memory.track.title+' · '+memory.track.artist:'Listen at source'}>Open Song ↗</a>}</div></div>
  </footer>{read&&<section className="reading-room"><button onClick={()=>setRead(false)}>Back to memory</button><time>{dateText}</time><h2>{memory.title}</h2><p>{memory.diary}</p>{memory.track&&<p>{memory.track.title} · {memory.track.artist}</p>}</section>}
  </dialog>;
 }
