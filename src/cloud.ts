@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { createClient } from '@supabase/supabase-js';
-import {audioTypes,videoTypes} from './soundtrack';
+import {audioTypes,videoTypes,inspectSound} from './soundtrack';
 import type { Memory } from './memories';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
@@ -50,6 +50,17 @@ export async function saveCloud(memory:Memory, owner:string, replacing=false, ph
     if(memory.photos.some(p=>!['image/jpeg','image/png','image/webp'].includes(p.type)||p.size>25*1024*1024))throw Error('Use JPEG, PNG or WebP photographs up to 25 MB.');
     if(memory.audio&&![...audioTypes,...videoTypes].includes(memory.audio.type))throw Error('Unsupported audio format.');
     if(!memory.photos.length)throw Error('Choose a photograph before saving.');
+    const path=memory.audio ? await upload(memory.audio) : null;
+    let audioUrl:string|undefined;
+    if(path){
+      const signed=await media().createSignedUrl(path,1800);
+      if(signed.error)throw signed.error;
+      audioUrl=signed.data.signedUrl;
+      if(memory.soundtrack && memory.audio){
+        phase?.('Checking soundtrack...');
+        memory.soundtrack.duration=await inspectSound(memory.soundtrack,memory.audio,audioUrl);
+      }
+    }
     const cover=await createImageBitmap(memory.photos[0]);
     const canvas=document.createElement('canvas');
     try {
@@ -61,7 +72,6 @@ export async function saveCloud(memory:Memory, owner:string, replacing=false, ph
     const previewPath=await upload(thumbnail);
     const pictures=[];
     for(const photo of memory.photos) pictures.push({path:await upload(photo),type:photo.type,size:photo.size});
-    const path=memory.audio ? await upload(memory.audio) : null;
     const {id,date,title,diary,room,slot,visual}=memory;
     phase?.('Saving your memory...');
     submitted=true;
@@ -72,7 +82,7 @@ export async function saveCloud(memory:Memory, owner:string, replacing=false, ph
       const receipt=await client!.from('memories').select('visual_settings').eq('id',id).maybeSingle();
       if(receipt.error||receipt.data?.visual_settings?.previewPath!==previewPath)throw error;
     }
-    memory.visual={...visual,previewPath};memory.media={pictures:pictures.map(p=>p.path),audio:path??undefined};
+    memory.visual={...visual,previewPath};memory.media={pictures:pictures.map(p=>p.path),audio:path??undefined,audioUrl,expires:Date.now()+1790000};
     if(previous.length)await cleanFiles(owner,previous).catch(()=>{});
   } catch(error) {
     if(!submitted && uploaded.length)await cleanFiles(owner,uploaded).catch(()=>{});
@@ -98,15 +108,17 @@ export async function readCloud(owner:string):Promise<Memory[]> {
 }
 
 export async function prepareOpening(memory:Memory):Promise<Memory>{
-  if(!memory.media||memory.photos.length)return memory;
-  const keys=memory.media.pictures;
-  const {data,error}=await media().createSignedUrls(keys,3600);
+  if(!memory.media)return memory;
+  const keys=memory.photos.length?[]:memory.media.pictures;
+  const audio=memory.media.audio;
+  const renew=audio&&(!memory.media.audioUrl||!memory.media.expires||memory.media.expires<=Date.now());
+  const paths=renew?[...keys,audio]:keys;
+  if(!paths.length)return memory;
+  const {data,error}=await media().createSignedUrls(paths,3600);
   if(error)throw error;
   const urls=new Map(data.map(entry=>[entry.path,entry.signedUrl]));
-  const sources=keys.map(path=>{const url=urls.get(path);if(!url)throw Error('A photograph is unavailable.');return url});
-  // Only the displayed photographs are requested by the viewer. Editing still hydrates originals.
-  const needsAudio=memory.media.audio&&(!memory.media.audioUrl||!memory.media.expires||memory.media.expires<=Date.now());
-  return {...memory,sources,audio:needsAudio?await download(memory.media.audio!):undefined};
+  function required(path:string){const url=urls.get(path);if(!url)throw Error('A media file is unavailable.');return url}
+  return {...memory,sources:keys.length?keys.map(required):memory.sources,media:renew?{...memory.media,audioUrl:required(audio),expires:Date.now()+3590000}:memory.media};
 }
 export async function hydrate(memory:Memory):Promise<Memory>{
   if(!memory.media || memory.photos.length)return memory;

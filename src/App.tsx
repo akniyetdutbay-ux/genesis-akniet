@@ -176,11 +176,11 @@ export default function App({owner}:{owner:string|null}) {
         soundtrack.current=player;player.src=url;
         void player.play().catch((error:Error)=>{player.dataset.playError=error.name;player.dispatchEvent(new Event('soundtrackfailure'))});
       }
-      const audio=source?.type==='audio_url'?source.url:memory.audio?URL.createObjectURL(memory.audio):memory.media?.expires&&memory.media.expires>Date.now()?memory.media.audioUrl:undefined;
-      if(audio&&source?.type!=='platform_link'){if(memory.audio)soundBlob.current=audio;start(audio)}
+      const audio=source?.type==='audio_url'?source.url:memory.media?.audio?(memory.media.expires&&memory.media.expires>Date.now()?memory.media.audioUrl:undefined):memory.audio?URL.createObjectURL(memory.audio):undefined;
+      if(audio&&source?.type!=='platform_link'){if(audio.startsWith('blob:'))soundBlob.current=audio;start(audio)}
       Promise.all([prepareOpening(memory),new Promise(resolve=>setTimeout(resolve,reduced?0:1100))]).then(([full])=>{
         if(ticket.current!==request)return;
-        if(!soundtrack.current&&full.audio){soundBlob.current=URL.createObjectURL(full.audio);start(soundBlob.current);}
+        if(!soundtrack.current&&full.media?.audioUrl)start(full.media.audioUrl);
         setNotice('');setViewer(full);
       }).catch(()=>{if(ticket.current===request){stopStory();setNotice('Could not open this memory. Select the frame to retry.')}});
     }else {if(!owner)sessionStorage.setItem("museum-create",JSON.stringify({room:place,slot:i}));setEditor(i)}},[loaded,busy,memories,place,reduced,owner,stopStory]);
